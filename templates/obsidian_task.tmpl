@@ -1,0 +1,25 @@
+{{range $task := .Tasks}}
+# {{$task.Title}}
+
+**Category:** {{$task.Category}}
+**Status:** {{$task.Status}}
+**Created At:** {{$task.CreatedAt}}
+**Completed At:** {{$task.CompletedAt}}
+
+## Context / Description
+{{if $task.Description}}{{$task.Description}}{{else}}*No description provided.*{{end}}
+
+## Targets
+{{if $task.Targets}}{{$task.Targets}}{{else}}*No targets provided.*{{end}}
+
+## Work Logs
+
+{{range $date := $task.SortedDates}}
+### {{$date}}
+{{range $logs := index $task.LogsByDate $date}}
+- **{{.Time}}**: {{.Text}}{{if .Note}} (*{{.Note}}*){{end}}
+{{end}}
+{{end}}
+
+---
+{{end}}
