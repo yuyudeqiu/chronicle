@@ -77,6 +77,22 @@ type DailySummaryResp struct {
 	Activities []DailySummaryActivity `json:"activities"`
 }
 
+type StatsSummaryResp struct {
+	TotalTasks         int                    `json:"total_tasks"`
+	CompletedTasks     int                    `json:"completed_tasks"`
+	TodoTasks          int                    `json:"todo_tasks"`
+	InProgressTasks    int                    `json:"in_progress_tasks"`
+	ByCategory         map[string]int         `json:"by_category"`
+	CompletionRate     float64                `json:"completion_rate"`
+	WeeklyStats        []DailyStats           `json:"weekly_stats"`
+}
+
+type DailyStats struct {
+	Date       string `json:"date"`
+	Completed  int    `json:"completed"`
+	Created    int    `json:"created"`
+}
+
 type StandardResponse struct {
 	Code int         `json:"code"`
 	Msg  string      `json:"msg"`
