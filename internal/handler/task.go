@@ -15,6 +15,7 @@ func RegisterRoutes(r *gin.Engine) {
 		v1.POST("/tasks", CreateTask)
 		v1.GET("/tasks", GetActiveTasks)
 		v1.GET("/tasks/:id", GetTask)
+		v1.PATCH("/tasks/:id", UpdateTask)
 		v1.DELETE("/tasks/:id", DeleteTask)
 		v1.POST("/tasks/:id/progress", UpdateProgress)
 		v1.DELETE("/worklogs/:id", DeleteWorklog)
@@ -106,6 +107,28 @@ func GetTask(c *gin.Context) {
 	task, err := service.GetTask(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to get task: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResp(task))
+}
+
+func UpdateTask(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, model.ErrorResp(400, "missing task id"))
+		return
+	}
+
+	var req model.UpdateTaskReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.ErrorResp(400, "invalid parameters: "+err.Error()))
+		return
+	}
+
+	task, err := service.UpdateTask(id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to update task: "+err.Error()))
 		return
 	}
 
