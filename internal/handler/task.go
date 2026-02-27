@@ -21,6 +21,7 @@ func RegisterRoutes(r *gin.Engine) {
 		v1.DELETE("/worklogs/:id", DeleteWorklog)
 		v1.GET("/reports/daily-summary", GetDailySummary)
 		v1.GET("/exports/daily-markdown", GetDailyMarkdown)
+		v1.GET("/stats/summary", GetStatsSummary)
 	}
 }
 
@@ -177,4 +178,14 @@ func GetDailyMarkdown(c *gin.Context) {
 
 	c.Header("Content-Disposition", "attachment; filename=obsidian_tasks.zip")
 	c.Data(http.StatusOK, "application/zip", zipBytes)
+}
+
+func GetStatsSummary(c *gin.Context) {
+	summary, err := service.GetStatsSummary()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to get stats: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResp(summary))
 }

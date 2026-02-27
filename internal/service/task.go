@@ -110,6 +110,9 @@ func UpdateTask(id string, req model.UpdateTaskReq) (*model.Task, error) {
 	if req.Targets != "" {
 		updates["targets"] = req.Targets
 	}
+	if req.Links != "" {
+		updates["links"] = req.Links
+	}
 	if req.Deadline != nil {
 		updates["deadline"] = req.Deadline.Local()
 	}
@@ -243,6 +246,70 @@ func GetDailySummary(dateStr string) (*model.DailySummaryResp, error) {
 	resp := &model.DailySummaryResp{
 		Date:       startOfDay.Format("2006-01-02"),
 		Activities: activities,
+	}
+
+	return resp, nil
+}
+
+func GetStatsSummary() (*model.StatsSummaryResp, error) {
+	var totalTasks int64
+	var completedTasks int64
+	var todoTasks int64
+	var inProgressTasks int64
+
+	// Total counts by status
+	DB.Model(&model.Task{}).Count(&totalTasks)
+	DB.Model(&model.Task{}).Where("status = ?", model.TaskStatusDone).Count(&completedTasks)
+	DB.Model(&model.Task{}).Where("status = ?", model.TaskStatusTodo).Count(&todoTasks)
+	DB.Model(&model.Task{}).Where("status = ?", model.TaskStatusInProgress).Count(&inProgressTasks)
+
+	// By category
+	var categoryCounts []struct {
+		Category string
+		Count    int
+	}
+	DB.Model(&model.Task{}).Select("category, COUNT(*) as count").Group("category").Scan(&categoryCounts)
+
+	byCategory := make(map[string]int)
+	for _, c := range categoryCounts {
+		byCategory[c.Category] = c.Count
+	}
+
+	// Completion rate
+	var completionRate float64
+	if totalTasks > 0 {
+		completionRate = float64(completedTasks) / float64(totalTasks)
+	}
+
+	// Weekly stats (last 7 days)
+	var weeklyStats []model.DailyStats
+	for i := 6; i >= 0; i-- {
+		date := time.Now().AddDate(0, 0, -i)
+		dateStr := date.Format("2006-01-02")
+		startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+		endOfDay := startOfDay.Add(24 * time.Hour)
+
+		var created int64
+		var completed int64
+
+		DB.Model(&model.Task{}).Where("created_at >= ? AND created_at < ?", startOfDay, endOfDay).Count(&created)
+		DB.Model(&model.Task{}).Where("status = ? AND actual_completed_at >= ? AND actual_completed_at < ?", model.TaskStatusDone, startOfDay, endOfDay).Count(&completed)
+
+		weeklyStats = append(weeklyStats, model.DailyStats{
+			Date:      dateStr,
+			Completed: int(completed),
+			Created:   int(created),
+		})
+	}
+
+	resp := &model.StatsSummaryResp{
+		TotalTasks:      int(totalTasks),
+		CompletedTasks:  int(completedTasks),
+		TodoTasks:       int(todoTasks),
+		InProgressTasks: int(inProgressTasks),
+		ByCategory:      byCategory,
+		CompletionRate:  completionRate,
+		WeeklyStats:     weeklyStats,
 	}
 
 	return resp, nil
