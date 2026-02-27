@@ -10,13 +10,19 @@ import (
 )
 
 func CreateTask(req model.CreateTaskReq) (*model.Task, error) {
+	var localDeadline *time.Time
+	if req.Deadline != nil {
+		ld := req.Deadline.Local()
+		localDeadline = &ld
+	}
+
 	task := &model.Task{
 		ID:          uuid.New().String(),
 		Title:       req.Title,
 		Category:    req.Category,
 		Description: req.Description,
 		Targets:     req.Targets,
-		Deadline:    req.Deadline,
+		Deadline:    localDeadline,
 		Status:      model.TaskStatusTodo,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -106,7 +112,7 @@ func UpdateProgress(taskID string, req model.UpdateProgressReq) error {
 
 		// Update deadline if provided
 		if req.Deadline != nil {
-			updates["deadline"] = *req.Deadline
+			updates["deadline"] = req.Deadline.Local()
 		}
 
 		newStatus := task.Status

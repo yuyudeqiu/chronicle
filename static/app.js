@@ -108,6 +108,22 @@ function openProgressModal(task) {
     document.getElementById('progress-task-id').value = task.id;
     document.getElementById('progress-task-title').textContent = task.title;
 
+    // Set deadline if it exists
+    const dlInput = document.getElementById('progress-deadline');
+    if (dlInput) {
+        if (task.deadline) {
+            const d = new Date(task.deadline);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            dlInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        } else {
+            dlInput.value = '';
+        }
+    }
+
     // Select default radio based on current status
     const radios = document.getElementsByName('progress_action');
     radios[0].checked = true; // Default to update log
@@ -244,6 +260,12 @@ function handleUpdateProgress(e) {
     e.preventDefault();
     const taskId = document.getElementById('progress-task-id').value;
     const logText = document.getElementById('progress-log').value;
+    const deadlineInput = document.getElementById('progress-deadline')?.value;
+
+    let deadline = null;
+    if (deadlineInput) {
+        deadline = new Date(deadlineInput).toISOString();
+    }
 
     // Find which radio is checked
     let markAsDone = false;
@@ -263,7 +285,8 @@ function handleUpdateProgress(e) {
         body: JSON.stringify({
             log_text: logText,
             mark_as_done: markAsDone,
-            new_status: markAsDone ? 'done' : 'in-progress'
+            new_status: markAsDone ? 'done' : 'in-progress',
+            deadline: deadline
         })
     })
         .then(res => res.json())
