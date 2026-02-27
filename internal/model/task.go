@@ -50,6 +50,14 @@ type UpdateProgressReq struct {
 	Deadline   *time.Time `json:"deadline"`
 }
 
+type UpdateTaskReq struct {
+	Title       string     `json:"title"`
+	Category    string     `json:"category"`
+	Description string     `json:"description"`
+	Targets     string     `json:"targets"`
+	Deadline    *time.Time `json:"deadline"`
+}
+
 type ActiveTaskResp struct {
 	ID       string `json:"id"`
 	Title    string `json:"title"`

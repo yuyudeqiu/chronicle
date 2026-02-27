@@ -88,6 +88,39 @@ func GetTask(id string) (*model.Task, error) {
 	return &task, nil
 }
 
+func UpdateTask(id string, req model.UpdateTaskReq) (*model.Task, error) {
+	var task model.Task
+	if err := DB.First(&task, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+
+	if req.Title != "" {
+		updates["title"] = req.Title
+	}
+	if req.Category != "" {
+		updates["category"] = req.Category
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.Targets != "" {
+		updates["targets"] = req.Targets
+	}
+	if req.Deadline != nil {
+		updates["deadline"] = req.Deadline.Local()
+	}
+
+	if err := DB.Model(&task).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+
+	return GetTask(id)
+}
+
 func UpdateProgress(taskID string, req model.UpdateProgressReq) error {
 	return DB.Transaction(func(tx *gorm.DB) error {
 		var task model.Task
