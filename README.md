@@ -19,7 +19,7 @@ Chronicle 这是一个专为 LLM Agent 打造的**任务管理与追踪系统 (A
 
 - **后端**: Golang, Gin 框架, GORM
 - **数据库**: SQLite (本地单文件存储)
-- **前端**: HTML, JavaScript (Vanilla), Tailwind CSS (CDN 引入)
+- **前端**: Vue 3, Vite, Tailwind CSS v4
 
 ## 📂 项目结构
 
@@ -30,10 +30,10 @@ Chronicle 这是一个专为 LLM Agent 打造的**任务管理与追踪系统 (A
 │   ├── handler/                  # HTTP 请求处理与响应 (Controller)
 │   ├── model/                    # GORM 实体与接口 DTO
 │   └── service/                  # 核心业务逻辑 (事务处理、状态机等)
-├── static/                       # 前端静态资源存放目录
-│   ├── index.html                # 任务管理主界面
-│   ├── summary.html              # 历史查询与日报生成界面
-│   └── app.js                    # 前端核心交互逻辑
+├── frontend/                     # 现代前端 Vue 3 工程目录
+│   ├── src/                      # Vue 组件和主入口
+│   ├── package.json              # Node.js 依赖配置
+│   └── dist/                     # Vite 构建输出目录 (Go Server 通过静态代理服务该目录)
 ├── templates/                    # Go Template 模板目录
 │   └── obsidian_task.tmpl        # 导出为 Obsidian Markdown 的渲染模板
 ├── data/                         # 数据库文件存放目录 (运行时自动生成)
@@ -45,26 +45,31 @@ Chronicle 这是一个专为 LLM Agent 打造的**任务管理与追踪系统 (A
 
 ### 1. 环境准备
 
-请确保您本地已经安装了 [Golang](https://go.dev/dl/) (版本建议 >= 1.20)。
+请确保您本地已经安装了：
+- [Golang](https://go.dev/dl/) (版本建议 >= 1.20)
+- [Node.js](https://nodejs.org/) (版本建议 >= 18) 和 npm
 
-### 2. 下载并安装依赖
+### 2. 构建前端页面
+
+因为使用了现代化的 Vite + Vue 3 架构，在运行 Go 服务前，必须先编译前端资源：
 
 ```bash
-git clone <your-repository-url>
-cd chronicle
-go mod tidy
+cd frontend
+npm install
+npm run build
+cd ..
 ```
+*(编译后的产物会存放在 `frontend/dist` 记录中，并且自动由后端的 Go 服务提供代理访问)*
 
-### 3. 运行服务
+### 3. 下载后端依赖并运行服务
 
 ```bash
+go mod tidy
 # 启动本地开发服务器，默认端口为 8080
 go run cmd/server/main.go
 ```
 
-服务启动后，可以通过浏览器访问前端界面：
-- 主操作界面: http://localhost:8080/
-- 历史/概览界面: http://localhost:8080/summary.html
+服务启动后，可以直接通过浏览器访问主操作界面： http://localhost:8080/
 
 ### 4. 编译可执行文件
 

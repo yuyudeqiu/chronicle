@@ -15,14 +15,16 @@ func main() {
 	// Setup router
 	r := gin.Default()
 
-	// Register routes
+	// Register APIs
 	handler.RegisterRoutes(r)
 
-	// Serve static files
-	r.StaticFile("/", "./static/index.html")
-	r.StaticFile("/app.js", "./static/app.js")
-	r.StaticFile("/summary.html", "static/summary.html")
+	// Serve the frontend build output for static assets
+	r.Static("/assets", "./frontend/dist/assets")
 
+	// Serve index.html for all other routes (SPA fallback)
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./frontend/dist/index.html")
+	})
 	// Start server
 	log.Println("Starting server on :8080...")
 	if err := r.Run(":8080"); err != nil {
