@@ -7,7 +7,7 @@ defineProps({
   done: { type: Array, required: true }
 })
 
-const emit = defineEmits(['task-click'])
+const emit = defineEmits(['task-click', 'start'])
 </script>
 
 <template>
@@ -28,6 +28,7 @@ const emit = defineEmits(['task-click'])
           :key="task.id" 
           :task="task" 
           @click="emit('task-click', $event)" 
+          @start="emit('start', $event)"
         />
         <div v-if="todos.length === 0" class="text-sm text-slate-500 italic text-center py-4">No tasks to do</div>
       </div>

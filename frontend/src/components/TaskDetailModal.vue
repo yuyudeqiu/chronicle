@@ -6,7 +6,7 @@ const props = defineProps({
   task: Object
 })
 
-const emit = defineEmits(['close', 'edit', 'delete', 'progress', 'delete-worklog'])
+const emit = defineEmits(['close', 'edit', 'delete', 'progress', 'delete-worklog', 'start'])
 
 const formattedDeadline = computed(() => {
   if (!props.task || !props.task.deadline) return ''
@@ -49,6 +49,7 @@ function formatTime(isoString) {
             <div class="flex gap-3">
               <button @click="emit('edit')" class="text-xs bg-slate-500/10 hover:bg-slate-500 text-slate-400 hover:text-white border border-slate-500/20 px-3 py-1.5 rounded-lg transition-colors">Edit</button>
               <button @click="emit('delete')" class="text-xs bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-3 py-1.5 rounded-lg transition-colors">Delete</button>
+              <button v-if="task?.status === 'todo'" @click="emit('start')" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg shadow-emerald-500/20">Start Task</button>
               <button v-if="task?.status !== 'done'" @click="emit('progress')" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg shadow-indigo-500/20">Update Progress</button>
               <button @click="emit('close')" class="flex-shrink-0 text-slate-400 hover:text-white transition-colors p-1">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>

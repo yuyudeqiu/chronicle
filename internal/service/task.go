@@ -116,6 +116,12 @@ func UpdateTask(id string, req model.UpdateTaskReq) (*model.Task, error) {
 	if req.Deadline != nil {
 		updates["deadline"] = req.Deadline.Local()
 	}
+	if req.Status != "" {
+		updates["status"] = req.Status
+		if req.Status == model.TaskStatusDone {
+			updates["actual_completed_at"] = time.Now()
+		}
+	}
 
 	if err := DB.Model(&task).Updates(updates).Error; err != nil {
 		return nil, err

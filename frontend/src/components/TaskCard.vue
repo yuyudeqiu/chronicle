@@ -8,7 +8,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['click'])
+const emit = defineEmits(['click', 'start'])
 
 const isDone = computed(() => props.task.status === 'done')
 const isInProgress = computed(() => props.task.status === 'in-progress')
@@ -41,6 +41,11 @@ const titleClasses = computed(() => {
       <span class="text-[10px] uppercase tracking-wider font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20">
         {{ task.category }}
       </span>
+
+      <!-- Todo Badge / Action -->
+      <button v-if="isTodo" @click.stop="emit('start', task)" title="Start Task" class="ml-auto flex items-center justify-center w-6 h-6 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-colors border border-emerald-500/20 opacity-0 group-hover:opacity-100 flex-shrink-0">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      </button>
 
       <!-- In Progress Badge -->
       <span v-if="isInProgress" class="flex h-2 w-2 relative ml-auto flex-shrink-0">

@@ -149,6 +149,29 @@ async function handleDeleteTask() {
   }
 }
 
+async function handleStartTask(task) {
+  const targetTask = task && task.id ? task : activeTask.value;
+  if (!targetTask) return
+  try {
+    const res = await fetch(`/api/v1/tasks/${targetTask.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'in-progress' })
+    }).then(r => r.json())
+    if (res.code === 0) {
+      showToast('Task started! 🚀')
+      await loadTasks()
+      if (activeTask.value && activeTask.value.id === targetTask.id) {
+         await loadTaskDetail(targetTask.id)
+      }
+    } else {
+      showToast('Failed to start task: ' + res.msg)
+    }
+  } catch (err) {
+    showToast('Network error starting task')
+  }
+}
+
 function handleOpenProgress() {
   isDetailModalOpen.value = false
   isProgressModalOpen.value = true
@@ -224,6 +247,7 @@ async function handleDeleteWorklog(logId) {
       :inProgress="inProgress" 
       :done="done" 
       @task-click="handleTaskClick" 
+      @start="handleStartTask"
     />
   </main>
 
@@ -242,6 +266,7 @@ async function handleDeleteWorklog(logId) {
     @edit="handleOpenEdit"
     @delete="handleDeleteTask"
     @progress="handleOpenProgress"
+    @start="handleStartTask"
     @delete-worklog="handleDeleteWorklog"
   />
 
