@@ -39,19 +39,27 @@ function formatTime(isoString) {
 </script>
 
 <template>
-  <div v-show="isOpen && task" class="fixed inset-0 z-50">
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="emit('close')"></div>
+  <div v-show="isOpen && task" class="fixed inset-0 z-50" @click.self="emit('close')">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity pointer-events-none"></div>
     <div class="fixed inset-0 z-10 overflow-y-auto">
       <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         <div class="relative transform overflow-hidden rounded-2xl bg-dark-card border border-dark-border text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
           <div class="px-6 py-5 border-b border-dark-border flex justify-between items-center bg-gradient-to-r from-dark-card to-dark-bg">
-            <h3 class="text-lg font-semibold text-white truncate pr-4">{{ task?.title }}</h3>
-            <div class="flex gap-3">
-              <button @click="emit('edit')" class="text-xs bg-slate-500/10 hover:bg-slate-500 text-slate-400 hover:text-white border border-slate-500/20 px-3 py-1.5 rounded-lg transition-colors">Edit</button>
-              <button @click="emit('delete')" class="text-xs bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-3 py-1.5 rounded-lg transition-colors">Delete</button>
-              <button v-if="task?.status === 'todo'" @click="emit('start')" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg shadow-emerald-500/20">Start Task</button>
-              <button v-if="task?.status !== 'done'" @click="emit('progress')" class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg transition-colors shadow-lg shadow-indigo-500/20">Update Progress</button>
-              <button @click="emit('close')" class="flex-shrink-0 text-slate-400 hover:text-white transition-colors p-1">
+            <h3 class="text-xl font-bold text-white truncate pr-4 drop-shadow-sm">{{ task?.title }}</h3>
+            <div class="flex gap-2">
+              <button @click="emit('edit')" class="text-xs bg-dark-bg hover:bg-white/5 border border-white/10 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl transition-all shadow-sm">
+                Edit
+              </button>
+              <button @click="emit('delete')" class="text-xs bg-dark-bg hover:bg-red-500/10 border border-red-500/20 text-red-400 hover:text-red-300 px-3.5 py-1.5 rounded-xl transition-all shadow-sm">
+                Delete
+              </button>
+              <button v-if="task?.status === 'todo'" @click="emit('start')" class="text-xs bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white px-3.5 py-1.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 border border-emerald-400/20 font-medium">
+                Start Task
+              </button>
+              <button v-if="task?.status !== 'done'" @click="emit('progress')" class="text-xs bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white px-3.5 py-1.5 rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 border border-indigo-400/20 font-medium">
+                Update Progress
+              </button>
+              <button @click="emit('close')" class="flex-shrink-0 text-slate-400 hover:text-white transition-colors p-1 ml-1 rounded-full hover:bg-white/5">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
@@ -97,18 +105,25 @@ function formatTime(isoString) {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Worklogs
               </h4>
-              <div class="space-y-3">
-                <div v-if="!task?.logs || task.logs.length === 0" class="text-sm text-slate-500 italic">No worklogs yet.</div>
-                <div v-for="log in task?.logs" :key="log.id" class="bg-dark-bg p-3 rounded-lg border border-dark-border text-sm group relative">
-                  <div class="flex justify-between items-start mb-1">
-                    <div class="text-xs text-slate-500">{{ formatTime(log.created_at) }}</div>
-                    <button @click="emit('delete-worklog', log.id)" title="Delete Worklog" class="text-xs text-red-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
+                <div v-if="!task?.logs || task.logs.length === 0" class="text-sm text-slate-500 italic px-4 py-3 bg-dark-bg/50 rounded-xl border border-dashed border-dark-border text-center">No worklogs yet. Start tracking your progress!</div>
+                
+                <div v-else class="relative pl-7 space-y-5 before:absolute before:inset-y-0 before:left-[11px] before:w-px before:bg-dark-border mt-3 mb-2">
+                  <div v-for="(log, index) in task?.logs" :key="log.id" class="relative group">
+                    <!-- Clean Timeline Dot -->
+                    <div class="absolute -left-[30px] top-[7px] w-2 h-2 rounded-full bg-slate-400 group-hover:bg-indigo-400 group-hover:shadow-[0_0_8px_rgba(99,102,241,0.6)] transition-all z-10 ring-4 ring-dark-card"></div>
+                    
+                    <div class="flex flex-col gap-1 -mt-0.5">
+                      <div class="flex items-center gap-3">
+                        <span class="text-[11px] font-medium text-slate-500 group-hover:text-indigo-300 transition-colors">{{ formatTime(log.created_at) }}</span>
+                        <div class="flex-grow border-t border-dashed border-dark-border/50"></div>
+                        <button @click="emit('delete-worklog', log.id)" title="Delete Worklog" class="text-xs text-red-500/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-red-500/10 rounded">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                      </div>
+                      <div class="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed pr-6">{{ log.log_text }}</div>
+                    </div>
                   </div>
-                  <div class="text-slate-200 whitespace-pre-wrap pr-6">{{ log.log_text }}</div>
                 </div>
-              </div>
             </div>
           </div>
         </div>

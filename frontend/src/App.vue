@@ -6,6 +6,8 @@ import TaskBoard from './components/TaskBoard.vue'
 import TaskFormModal from './components/TaskFormModal.vue'
 import TaskDetailModal from './components/TaskDetailModal.vue'
 import ProgressModal from './components/ProgressModal.vue'
+import StatsModal from './components/StatsModal.vue'
+import DailySummaryModal from './components/DailySummaryModal.vue'
 
 // -- GLOBAL STATE --
 const tasks = ref([])
@@ -15,6 +17,8 @@ const activeTask = ref(null) // Used for detail, edit, and progress
 const isFormModalOpen = ref(false)
 const isDetailModalOpen = ref(false)
 const isProgressModalOpen = ref(false)
+const isStatsModalOpen = ref(false)
+const isSummaryModalOpen = ref(false)
 
 const isEditMode = ref(false) // Whether FormModal is Create or Edit
 
@@ -222,16 +226,16 @@ async function handleDeleteWorklog(logId) {
 </script>
 
 <template>
-  <nav class="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 border-b border-dark-border bg-dark-bg/80">
+  <nav class="sticky top-0 z-40 w-full backdrop-blur-md flex-none transition-colors duration-500 lg:z-50 border-b border-dark-border bg-dark-bg/85">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/20">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30 ring-1 ring-white/20">
             C
           </div>
-          <span class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-200 to-slate-400">Chronicle</span>
+          <span class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 to-slate-400">Chronicle</span>
         </div>
-        <button @click="handleNewTaskClick" class="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:scale-95">
+        <button @click="handleNewTaskClick" class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:scale-95 border border-indigo-400/20">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
           </svg>
@@ -248,6 +252,8 @@ async function handleDeleteWorklog(logId) {
       :done="done" 
       @task-click="handleTaskClick" 
       @start="handleStartTask"
+      @view-stats="isStatsModalOpen = true"
+      @view-summary="isSummaryModalOpen = true"
     />
   </main>
 
@@ -275,6 +281,16 @@ async function handleDeleteWorklog(logId) {
     :task="activeTask"
     @close="isProgressModalOpen = false"
     @submit="handleProgressSubmit"
+  />
+
+  <StatsModal
+    v-if="isStatsModalOpen"
+    @close="isStatsModalOpen = false"
+  />
+
+  <DailySummaryModal
+    v-if="isSummaryModalOpen"
+    @close="isSummaryModalOpen = false"
   />
 
   <!-- Toast Notification -->

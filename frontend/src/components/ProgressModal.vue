@@ -45,14 +45,14 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div v-show="isOpen" class="fixed inset-0 z-50">
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" @click="emit('close')"></div>
+  <div v-show="isOpen" class="fixed inset-0 z-50" @click.self="emit('close')">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity pointer-events-none"></div>
     <div class="fixed inset-0 z-10 overflow-y-auto">
       <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         <div class="relative transform overflow-hidden rounded-2xl bg-dark-card border border-dark-border text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
           <div class="px-6 py-5 border-b border-dark-border flex justify-between items-center bg-gradient-to-r from-dark-card to-dark-bg">
-            <h3 class="text-lg font-semibold text-white truncate pr-4">Update Task: {{ task?.title }}</h3>
-            <button @click="emit('close')" class="flex-shrink-0 text-slate-400 hover:text-white transition-colors">
+            <h3 class="text-xl font-bold text-white truncate pr-4 drop-shadow-sm">Update Task: {{ task?.title }}</h3>
+            <button @click="emit('close')" class="flex-shrink-0 text-slate-400 hover:text-white transition-colors p-1 ml-1 rounded-full hover:bg-white/5">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
           </div>
@@ -88,9 +88,9 @@ function handleSubmit() {
               </div>
             </div>
 
-            <div class="mt-6 flex justify-end gap-3">
-              <button type="button" @click="emit('close')" class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">Cancel</button>
-              <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-indigo-500/20">Save Log</button>
+            <div class="mt-6 flex justify-end gap-3 pt-2">
+              <button type="button" @click="emit('close')" class="px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white transition-colors rounded-xl hover:bg-white/5">Cancel</button>
+              <button type="submit" class="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 active:scale-95 border border-indigo-400/20">Save Log</button>
             </div>
           </form>
         </div>
