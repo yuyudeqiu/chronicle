@@ -50,7 +50,7 @@ func GetActiveTasks() ([]model.ActiveTaskResp, error) {
 func GetHistoryTasks() ([]model.ActiveTaskResp, error) {
 	var tasks []model.ActiveTaskResp
 	err := DB.Model(&model.Task{}).Select("id", "title", "category", "status").
-		Where("status = ?", model.TaskStatusDone).
+		Where("status = ? AND archived_at IS NULL", model.TaskStatusDone).
 		Order("actual_completed_at desc").
 		Limit(50).
 		Find(&tasks).Error
@@ -58,6 +58,32 @@ func GetHistoryTasks() ([]model.ActiveTaskResp, error) {
 		return nil, err
 	}
 	return tasks, nil
+}
+
+func GetArchivedTasks() ([]model.ActiveTaskResp, error) {
+	var tasks []model.ActiveTaskResp
+	err := DB.Model(&model.Task{}).Select("id", "title", "category", "status").
+		Where("archived_at IS NOT NULL").
+		Order("archived_at desc").
+		Find(&tasks).Error
+	if err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func ArchiveTask(id string) error {
+	return DB.Model(&model.Task{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"archived_at": time.Now(),
+		"updated_at":  time.Now(),
+	}).Error
+}
+
+func UnarchiveTask(id string) error {
+	return DB.Model(&model.Task{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"archived_at": nil,
+		"updated_at":  time.Now(),
+	}).Error
 }
 
 func DeleteTask(id string) error {
@@ -264,18 +290,18 @@ func GetStatsSummary() (*model.StatsSummaryResp, error) {
 	var todoTasks int64
 	var inProgressTasks int64
 
-	// Total counts by status
-	DB.Model(&model.Task{}).Count(&totalTasks)
-	DB.Model(&model.Task{}).Where("status = ?", model.TaskStatusDone).Count(&completedTasks)
-	DB.Model(&model.Task{}).Where("status = ?", model.TaskStatusTodo).Count(&todoTasks)
-	DB.Model(&model.Task{}).Where("status = ?", model.TaskStatusInProgress).Count(&inProgressTasks)
+	// Total counts by status (excluding archived)
+	DB.Model(&model.Task{}).Where("archived_at IS NULL").Count(&totalTasks)
+	DB.Model(&model.Task{}).Where("status = ? AND archived_at IS NULL", model.TaskStatusDone).Count(&completedTasks)
+	DB.Model(&model.Task{}).Where("status = ? AND archived_at IS NULL", model.TaskStatusTodo).Count(&todoTasks)
+	DB.Model(&model.Task{}).Where("status = ? AND archived_at IS NULL", model.TaskStatusInProgress).Count(&inProgressTasks)
 
 	// By category
 	var categoryCounts []struct {
 		Category string
 		Count    int
 	}
-	DB.Model(&model.Task{}).Select("category, COUNT(*) as count").Group("category").Scan(&categoryCounts)
+	DB.Model(&model.Task{}).Where("archived_at IS NULL").Select("category, COUNT(*) as count").Group("category").Scan(&categoryCounts)
 
 	byCategory := make(map[string]int)
 	for _, c := range categoryCounts {

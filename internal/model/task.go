@@ -20,6 +20,7 @@ type Task struct {
 	Status            string     `gorm:"type:varchar(20);default:'todo';not null" json:"status"`
 	Deadline          *time.Time `json:"deadline,omitempty"`
 	ActualCompletedAt *time.Time `json:"actual_completed_at,omitempty"`
+	ArchivedAt        *time.Time `gorm:"index" json:"archived_at,omitempty"`
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
 

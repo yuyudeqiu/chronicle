@@ -14,10 +14,13 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		v1.POST("/tasks", CreateTask)
 		v1.GET("/tasks", GetActiveTasks)
+		v1.GET("/tasks/archived", GetArchivedTasks)
 		v1.GET("/tasks/:id", GetTask)
 		v1.PATCH("/tasks/:id", UpdateTask)
 		v1.DELETE("/tasks/:id", DeleteTask)
 		v1.POST("/tasks/:id/progress", UpdateProgress)
+		v1.POST("/tasks/:id/archive", ArchiveTask)
+		v1.POST("/tasks/:id/unarchive", UnarchiveTask)
 		v1.DELETE("/worklogs/:id", DeleteWorklog)
 		v1.GET("/reports/daily-summary", GetDailySummary)
 		v1.GET("/exports/daily-markdown", GetDailyMarkdown)
@@ -188,4 +191,43 @@ func GetStatsSummary(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, model.SuccessResp(summary))
+}
+
+func GetArchivedTasks(c *gin.Context) {
+	tasks, err := service.GetArchivedTasks()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to get archived tasks: "+err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, model.SuccessResp(tasks))
+}
+
+func ArchiveTask(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, model.ErrorResp(400, "missing task id"))
+		return
+	}
+
+	if err := service.ArchiveTask(id); err != nil {
+		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to archive task: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResp(nil))
+}
+
+func UnarchiveTask(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, model.ErrorResp(400, "missing task id"))
+		return
+	}
+
+	if err := service.UnarchiveTask(id); err != nil {
+		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to unarchive task: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SuccessResp(nil))
 }

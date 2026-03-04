@@ -6,7 +6,7 @@ const props = defineProps({
   task: Object
 })
 
-const emit = defineEmits(['close', 'edit', 'delete', 'progress', 'delete-worklog', 'start'])
+const emit = defineEmits(['close', 'edit', 'delete', 'progress', 'delete-worklog', 'start', 'archive', 'unarchive'])
 
 const formattedDeadline = computed(() => {
   if (!props.task || !props.task.deadline) return ''
@@ -47,6 +47,12 @@ function formatTime(isoString) {
           <div class="px-6 py-5 border-b border-dark-border flex justify-between items-center bg-gradient-to-r from-dark-card to-dark-bg">
             <h3 class="text-xl font-bold text-white truncate pr-4 drop-shadow-sm">{{ task?.title }}</h3>
             <div class="flex gap-2">
+              <button v-if="task?.archived_at" @click="emit('unarchive')" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-3.5 py-1.5 rounded-xl transition-all shadow-sm">
+                Unarchive
+              </button>
+              <button v-else-if="task?.status === 'done'" @click="emit('archive')" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-3.5 py-1.5 rounded-xl transition-all shadow-sm">
+                Archive
+              </button>
               <button @click="emit('edit')" class="text-xs bg-dark-bg hover:bg-white/5 border border-white/10 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl transition-all shadow-sm">
                 Edit
               </button>

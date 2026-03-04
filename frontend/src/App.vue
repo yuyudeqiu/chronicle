@@ -224,6 +224,38 @@ async function handleDeleteWorklog(logId) {
     showToast('Network error deleting worklog')
   }
 }
+
+async function handleArchiveTask() {
+  if (!activeTask.value) return
+  try {
+    const res = await fetch(`/api/v1/tasks/${activeTask.value.id}/archive`, { method: 'POST' }).then(r => r.json())
+    if (res.code === 0) {
+      showToast('Task archived')
+      isDetailModalOpen.value = false
+      loadTasks()
+    } else {
+      showToast('Failed to archive task: ' + res.msg)
+    }
+  } catch (err) {
+    showToast('Network error archiving task')
+  }
+}
+
+async function handleUnarchiveTask() {
+  if (!activeTask.value) return
+  try {
+    const res = await fetch(`/api/v1/tasks/${activeTask.value.id}/unarchive`, { method: 'POST' }).then(r => r.json())
+    if (res.code === 0) {
+      showToast('Task unarchived')
+      isDetailModalOpen.value = false
+      loadTasks()
+    } else {
+      showToast('Failed to unarchive task: ' + res.msg)
+    }
+  } catch (err) {
+    showToast('Network error unarchiving task')
+  }
+}
 </script>
 
 <template>
@@ -276,6 +308,8 @@ async function handleDeleteWorklog(logId) {
     @progress="handleOpenProgress"
     @start="handleStartTask"
     @delete-worklog="handleDeleteWorklog"
+    @archive="handleArchiveTask"
+    @unarchive="handleUnarchiveTask"
   />
 
   <ProgressModal 
