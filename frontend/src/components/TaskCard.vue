@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   task: {
@@ -29,6 +29,25 @@ const titleClasses = computed(() => {
   }
   return base
 })
+
+const isStarting = ref(false)
+
+async function handleStart() {
+  if (isStarting.value) return
+  isStarting.value = true
+  try {
+    await fetch(`/api/v1/tasks/${props.task.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'in-progress' })
+    })
+    emit('start')
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isStarting.value = false
+  }
+}
 </script>
 
 <template>
@@ -43,7 +62,7 @@ const titleClasses = computed(() => {
       </span>
 
       <!-- Todo Badge / Action -->
-      <button v-if="isTodo" @click.stop="emit('start', task)" title="Start Task" class="ml-auto flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white transition-all duration-300 border border-emerald-500/20 opacity-0 group-hover:opacity-100 flex-shrink-0 shadow-lg shadow-emerald-500/0 hover:shadow-emerald-500/30">
+      <button v-if="isTodo" @click.stop="handleStart" title="Start Task" class="ml-auto flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white transition-all duration-300 border border-emerald-500/20 opacity-0 group-hover:opacity-100 flex-shrink-0 shadow-lg shadow-emerald-500/0 hover:shadow-emerald-500/30 disabled:opacity-50" :disabled="isStarting">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
       </button>
 
