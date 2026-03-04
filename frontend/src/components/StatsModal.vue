@@ -84,38 +84,90 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Weekly Activity Array -->
+          <!-- Weekly Activity Line Chart -->
           <div class="bg-dark-card rounded-3xl p-6 border border-dark-border shadow-xl col-span-2">
             <h3 class="text-lg font-bold text-white mb-6">Last 7 Days</h3>
-            <div class="flex items-end justify-between h-48 gap-2 mt-4">
-              <div v-for="day in summary.weekly_stats" :key="day.date" class="relative flex flex-col items-center justify-end h-full gap-2 group w-full">
-                <!-- Data Tooltip -->
-                <div class="absolute -top-12 bg-dark-bg border border-dark-border px-3 py-2 rounded-xl text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap shadow-xl pointer-events-none">
-                  {{ day.date.slice(5) }}<br/>
-                  <span class="text-emerald-400">Done: {{ day.completed }}</span> | 
-                  <span class="text-indigo-400">New: {{ day.created }}</span>
-                </div>
-
-                <!-- Bars Container -->
-                <div class="flex gap-1 items-end w-full max-w-[40px] h-full justify-center">
-                  <!-- Created Bar -->
-                  <div class="w-1/2 bg-indigo-500/50 group-hover:bg-indigo-400 rounded-t-sm transition-all" 
-                       :style="{ height: `${Math.max(4, (day.created / Math.max(1, ...summary.weekly_stats.map(s => Math.max(s.created, s.completed)))) * 100)}%` }">
-                  </div>
-                  <!-- Completed Bar -->
-                  <div class="w-1/2 bg-emerald-500/50 group-hover:bg-emerald-400 rounded-t-sm transition-all"
-                       :style="{ height: `${Math.max(4, (day.completed / Math.max(1, ...summary.weekly_stats.map(s => Math.max(s.created, s.completed)))) * 100)}%` }">
-                  </div>
-                </div>
-
-                <!-- Date Label -->
-                <span class="text-[10px] text-slate-500 uppercase font-medium">{{ day.date.slice(5) }}</span>
+            
+            <!-- Line Chart SVG -->
+            <div class="relative h-48 w-full">
+              <svg class="w-full h-full" viewBox="0 0 700 180" preserveAspectRatio="none">
+                <!-- Grid lines -->
+                <line x1="50" y1="20" x2="650" y2="20" stroke="#334155" stroke-width="1" stroke-dasharray="4"/>
+                <line x1="50" y1="60" x2="650" y2="60" stroke="#334155" stroke-width="1" stroke-dasharray="4"/>
+                <line x1="50" y1="100" x2="650" y2="100" stroke="#334155" stroke-width="1" stroke-dasharray="4"/>
+                <line x1="50" y1="140" x2="650" y2="140" stroke="#334155" stroke-width="1" stroke-dasharray="4"/>
+                
+                <!-- Created Line (Indigo) -->
+                <polyline 
+                  fill="none" 
+                  stroke="#6366f1" 
+                  stroke-width="3" 
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  :points="summary.weekly_stats.map((d, i) => {
+                    const maxVal = Math.max(1, ...summary.weekly_stats.flatMap(s => [s.created, s.completed]));
+                    const x = 80 + i * 95;
+                    const y = 160 - (d.created / maxVal) * 130;
+                    return `${x},${y}`;
+                  }).join(' ')"
+                />
+                
+                <!-- Completed Line (Emerald) -->
+                <polyline 
+                  fill="none" 
+                  stroke="#10b981" 
+                  stroke-width="3" 
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  :points="summary.weekly_stats.map((d, i) => {
+                    const maxVal = Math.max(1, ...summary.weekly_stats.flatMap(s => [s.created, s.completed]));
+                    const x = 80 + i * 95;
+                    const y = 160 - (d.completed / maxVal) * 130;
+                    return `${x},${y}`;
+                  }).join(' ')"
+                />
+                
+                <!-- Data points - Created -->
+                <g v-for="(day, i) in summary.weekly_stats" :key="'c-'+i">
+                  <circle 
+                    :cx="80 + i * 95" 
+                    :cy="160 - (day.created / Math.max(1, ...summary.weekly_stats.flatMap(s => [s.created, s.completed]))) * 130" 
+                    r="5" 
+                    fill="#6366f1"
+                    stroke="#1e1b4b"
+                    stroke-width="2"
+                  />
+                </g>
+                
+                <!-- Data points - Completed -->
+                <g v-for="(day, i) in summary.weekly_stats" :key="'d-'+i">
+                  <circle 
+                    :cx="80 + i * 95" 
+                    :cy="160 - (day.completed / Math.max(1, ...summary.weekly_stats.flatMap(s => [s.created, s.completed]))) * 130" 
+                    r="5" 
+                    fill="#10b981"
+                    stroke="#064e3b"
+                    stroke-width="2"
+                  />
+                </g>
+              </svg>
+              
+              <!-- X-axis labels -->
+              <div class="flex justify-between px-2 mt-2">
+                <span v-for="day in summary.weekly_stats" :key="day.date" class="text-[10px] text-slate-500">{{ day.date.slice(5) }}</span>
               </div>
             </div>
+            
             <!-- Legend -->
-            <div class="flex gap-4 mt-6 justify-center">
-              <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm bg-indigo-500/50"></div><span class="text-xs text-slate-400">Created</span></div>
-              <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm bg-emerald-500/50"></div><span class="text-xs text-slate-400">Completed</span></div>
+            <div class="flex gap-6 mt-6 justify-center">
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-0.5 bg-indigo-500"></div>
+                <span class="text-xs text-slate-400">Created</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-4 h-0.5 bg-emerald-500"></div>
+                <span class="text-xs text-slate-400">Completed</span>
+              </div>
             </div>
           </div>
         </div>

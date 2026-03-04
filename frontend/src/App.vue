@@ -7,6 +7,7 @@ import TaskFormModal from './components/TaskFormModal.vue'
 import TaskDetailModal from './components/TaskDetailModal.vue'
 import ProgressModal from './components/ProgressModal.vue'
 import StatsModal from './components/StatsModal.vue'
+import StatsBar from './components/StatsBar.vue'
 import DailySummaryModal from './components/DailySummaryModal.vue'
 
 // -- GLOBAL STATE --
@@ -246,6 +247,7 @@ async function handleDeleteWorklog(logId) {
   </nav>
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <StatsBar />
     <TaskBoard 
       :todos="todos" 
       :inProgress="inProgress" 
