@@ -25,6 +25,7 @@ type TaskView struct {
 	Status             string
 	Description        string
 	Targets            string
+	Links              string
 	CreatedAt          string
 	CompletedAt        string
 	Deadline           string
@@ -94,6 +95,7 @@ func GenerateDailyMarkdown(dateStr string) ([]byte, error) {
 			Status:      t.Status,
 			Description: t.Description,
 			Targets:     t.Targets,
+			Links:       t.Links,
 			CreatedAt:   t.CreatedAt.Format("2006-01-02 15:04:05"),
 			CompletedAt: completedAt,
 			Deadline:    deadlineAt,
