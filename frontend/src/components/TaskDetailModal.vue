@@ -1,12 +1,51 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   isOpen: Boolean,
   task: Object
 })
 
-const emit = defineEmits(['close', 'edit', 'delete', 'progress', 'delete-worklog', 'start'])
+const emit = defineEmits(['close', 'edit', 'delete', 'progress', 'delete-worklog', 'start', 'refresh'])
+
+const toastMsg = ref('')
+const showToast = ref(false)
+
+function showToastMsg(msg) {
+  toastMsg.value = msg
+  showToast.value = true
+  setTimeout(() => { showToast.value = false }, 3000)
+}
+
+async function handleArchive() {
+  try {
+    const res = await fetch(`/api/v1/tasks/${props.task.id}/archive`, { method: 'POST' }).then(r => r.json())
+    if (res.code === 0) {
+      showToastMsg('Task archived')
+      emit('refresh')
+      emit('close')
+    } else {
+      showToastMsg('Failed: ' + res.msg)
+    }
+  } catch (err) {
+    showToastMsg('Network error')
+  }
+}
+
+async function handleUnarchive() {
+  try {
+    const res = await fetch(`/api/v1/tasks/${props.task.id}/unarchive`, { method: 'POST' }).then(r => r.json())
+    if (res.code === 0) {
+      showToastMsg('Task unarchived')
+      emit('refresh')
+      emit('close')
+    } else {
+      showToastMsg('Failed: ' + res.msg)
+    }
+  } catch (err) {
+    showToastMsg('Network error')
+  }
+}
 
 const formattedDeadline = computed(() => {
   if (!props.task || !props.task.deadline) return ''
@@ -47,6 +86,12 @@ function formatTime(isoString) {
           <div class="px-6 py-5 border-b border-dark-border flex justify-between items-center bg-gradient-to-r from-dark-card to-dark-bg">
             <h3 class="text-xl font-bold text-white truncate pr-4 drop-shadow-sm">{{ task?.title }}</h3>
             <div class="flex gap-2">
+              <button v-if="task?.archived_at" @click="handleUnarchive" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-3.5 py-1.5 rounded-xl transition-all shadow-sm">
+                Unarchive
+              </button>
+              <button v-else-if="task?.status === 'done'" @click="handleArchive" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 px-3.5 py-1.5 rounded-xl transition-all shadow-sm">
+                Archive
+              </button>
               <button @click="emit('edit')" class="text-xs bg-dark-bg hover:bg-white/5 border border-white/10 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl transition-all shadow-sm">
                 Edit
               </button>
@@ -128,6 +173,16 @@ function formatTime(isoString) {
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="fixed bottom-4 right-4 z-50 transform transition-all duration-300" :class="[showToast ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0']">
+    <div class="bg-amber-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span class="text-sm font-medium">{{ toastMsg }}</span>
     </div>
   </div>
 </template>

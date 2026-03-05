@@ -1,16 +1,61 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 
+const emit = defineEmits(['close', 'refresh'])
+
 const props = defineProps({
   isOpen: Boolean,
-  task: Object // if null, it's 'create' mode. if object, it's 'edit' mode.
+  task: Object
 })
-
-const emit = defineEmits(['close', 'submit'])
 
 const isEditMode = computed(() => !!props.task)
 const modalTitle = computed(() => isEditMode.value ? 'Edit Task' : 'Create New Task')
 const submitButtonText = computed(() => isEditMode.value ? 'Save Changes' : 'Create Task')
+
+const toastMsg = ref('')
+const showToast = ref(false)
+
+function showToastMsg(msg) {
+  toastMsg.value = msg
+  showToast.value = true
+  setTimeout(() => { showToast.value = false }, 3000)
+}
+
+async function handleSubmit() {
+  const payload = { ...formData.value }
+  if (payload.deadline) {
+    payload.deadline = new Date(payload.deadline).toISOString()
+  } else {
+    payload.deadline = null
+  }
+
+  try {
+    let res
+    if (isEditMode.value) {
+      res = await fetch(`/api/v1/tasks/${payload.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(r => r.json())
+    } else {
+      res = await fetch('/api/v1/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(r => r.json())
+    }
+
+    if (res.code === 0) {
+      showToastMsg(isEditMode.value ? 'Task updated' : 'Task created')
+      emit('refresh')
+      emit('close')
+    } else {
+      showToastMsg('Failed: ' + res.msg)
+    }
+  } catch (err) {
+    showToastMsg('Network error')
+  }
+}
 
 const formData = ref({
   id: '',
@@ -59,16 +104,6 @@ watch(() => props.isOpen, (newVal) => {
     }
   }
 })
-
-function handleSubmit() {
-  const payload = { ...formData.value }
-  if (payload.deadline) {
-    payload.deadline = new Date(payload.deadline).toISOString()
-  } else {
-    payload.deadline = null
-  }
-  emit('submit', payload)
-}
 </script>
 
 <template>
@@ -115,6 +150,16 @@ function handleSubmit() {
           </form>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="fixed bottom-4 right-4 z-50 transform transition-all duration-300" :class="[showToast ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0']">
+    <div class="bg-indigo-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span class="text-sm font-medium">{{ toastMsg }}</span>
     </div>
   </div>
 </template>

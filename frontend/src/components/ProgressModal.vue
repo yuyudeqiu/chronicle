@@ -3,10 +3,10 @@ import { ref, watch } from 'vue'
 
 const props = defineProps({
   isOpen: Boolean,
-  task: Object // Should have id, title, deadline
+  task: Object
 })
 
-const emit = defineEmits(['close', 'submit'])
+const emit = defineEmits(['close', 'refresh'])
 
 const formData = ref({
   logText: '',
@@ -14,12 +14,14 @@ const formData = ref({
   action: 'update'
 })
 
+const toastMsg = ref('')
+const showToast = ref(false)
+
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     formData.value.logText = ''
     formData.value.action = 'update'
     formData.value.deadline = ''
-
     if (props.task && props.task.deadline) {
       const d = new Date(props.task.deadline)
       const year = d.getFullYear()
@@ -32,15 +34,37 @@ watch(() => props.isOpen, (newVal) => {
   }
 })
 
-function handleSubmit() {
+function showToastMsg(msg) {
+  toastMsg.value = msg
+  showToast.value = true
+  setTimeout(() => { showToast.value = false }, 3000)
+}
+
+async function handleSubmit() {
   const payload = {
-    taskId: props.task.id,
     log_text: formData.value.logText,
     mark_as_done: formData.value.action === 'done',
     new_status: formData.value.action === 'done' ? 'done' : 'in-progress',
     deadline: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : null
   }
-  emit('submit', payload)
+
+  try {
+    const res = await fetch(`/api/v1/tasks/${props.task.id}/progress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => r.json())
+
+    if (res.code === 0) {
+      showToastMsg(formData.value.action === 'done' ? 'Task done!' : 'Progress logged')
+      emit('refresh')
+      emit('close')
+    } else {
+      showToastMsg('Failed: ' + res.msg)
+    }
+  } catch (err) {
+    showToastMsg('Network error')
+  }
 }
 </script>
 
@@ -95,6 +119,16 @@ function handleSubmit() {
           </form>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="fixed bottom-4 right-4 z-50 transform transition-all duration-300" :class="[showToast ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0']">
+    <div class="bg-indigo-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span class="text-sm font-medium">{{ toastMsg }}</span>
     </div>
   </div>
 </template>
