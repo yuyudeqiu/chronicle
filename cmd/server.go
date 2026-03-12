@@ -2,16 +2,25 @@ package cmd
 
 import (
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"github.com/yuyudeqiu/chronicle/internal/handler"
+	"github.com/yuyudeqiu/chronicle/internal/service"
 )
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the chronicle web server",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Initialize database - use absolute path
+		service.InitDB("data/app.db")
+
+		// Get current working directory
+		dir, _ := os.Getwd()
+		log.Printf("Working directory: %s", dir)
+
 		// Setup router
 		r := gin.Default()
 

@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/yuyudeqiu/chronicle/internal/service"
 )
+
+var jsonOutput bool
 
 var rootCmd = &cobra.Command{
 	Use:   "chronicle",
@@ -18,6 +21,16 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// JSON output helper
+func printJSON(v interface{}) {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "JSON marshal error: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(string(data))
+}
+
 // Execute executes the root command.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -27,4 +40,5 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.PersistentFlags().BoolVarP(&jsonOutput, "json", "o", false, "Output in JSON format")
 }

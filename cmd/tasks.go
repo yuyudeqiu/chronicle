@@ -44,8 +44,12 @@ var createCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("Task created: %s\n", task.ID)
-		printTask(task)
+		if jsonOutput {
+			printJSON(task)
+		} else {
+			fmt.Printf("Task created: %s\n", task.ID)
+			printTask(task)
+		}
 	},
 }
 
@@ -75,14 +79,22 @@ var listCmd = &cobra.Command{
 		}
 
 		if len(tasks) == 0 {
-			fmt.Println("No tasks found")
+			if jsonOutput {
+				printJSON([]model.ActiveTaskResp{})
+			} else {
+				fmt.Println("No tasks found")
+			}
 			return
 		}
 
-		fmt.Printf("Found %d tasks:\n\n", len(tasks))
-		for _, t := range tasks {
-			fmt.Printf("  [%s] %s - %s\n", t.Status, t.Title, t.Category)
-			fmt.Printf("    ID: %s\n\n", t.ID)
+		if jsonOutput {
+			printJSON(tasks)
+		} else {
+			fmt.Printf("Found %d tasks:\n\n", len(tasks))
+			for _, t := range tasks {
+				fmt.Printf("  [%s] %s - %s\n", t.Status, t.Title, t.Category)
+				fmt.Printf("    ID: %s\n\n", t.ID)
+			}
 		}
 	},
 }
@@ -99,12 +111,16 @@ var getCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		printTask(task)
+		if jsonOutput {
+			printJSON(task)
+		} else {
+			printTask(task)
 
-		if len(task.Logs) > 0 {
-			fmt.Println("\nWorklogs:")
-			for _, log := range task.Logs {
-				fmt.Printf("  [%s] %s\n", log.CreatedAt.Format("2006-01-02 15:04"), log.LogText)
+			if len(task.Logs) > 0 {
+				fmt.Println("\nWorklogs:")
+				for _, log := range task.Logs {
+					fmt.Printf("  [%s] %s\n", log.CreatedAt.Format("2006-01-02 15:04"), log.LogText)
+				}
 			}
 		}
 	},
@@ -127,7 +143,11 @@ var updateCmd = &cobra.Command{
 				fmt.Printf("Error: %v\n", err)
 				os.Exit(1)
 			}
-			fmt.Printf("Task status updated: %s\n", taskID)
+			if jsonOutput {
+				printJSON(map[string]string{"id": taskID, "status": "updated"})
+			} else {
+				fmt.Printf("Task status updated: %s\n", taskID)
+			}
 			return
 		}
 
@@ -145,8 +165,12 @@ var updateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("Task updated: %s\n", taskID)
-		printTask(task)
+		if jsonOutput {
+			printJSON(task)
+		} else {
+			fmt.Printf("Task updated: %s\n", taskID)
+			printTask(task)
+		}
 	},
 }
 
@@ -162,7 +186,11 @@ var deleteCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("Task deleted: %s\n", taskID)
+		if jsonOutput {
+			printJSON(map[string]string{"id": taskID, "status": "deleted"})
+		} else {
+			fmt.Printf("Task deleted: %s\n", taskID)
+		}
 	},
 }
 
@@ -184,7 +212,11 @@ var logCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("Worklog added to task: %s\n", taskID)
+		if jsonOutput {
+			printJSON(map[string]string{"id": taskID, "status": "worklog added"})
+		} else {
+			fmt.Printf("Worklog added to task: %s\n", taskID)
+		}
 	},
 }
 
@@ -203,29 +235,33 @@ var summaryCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("Daily Summary for %s\n\n", summary.Date)
+		if jsonOutput {
+			printJSON(summary)
+		} else {
+			fmt.Printf("Daily Summary for %s\n\n", summary.Date)
 
-		if len(summary.Activities) == 0 {
-			fmt.Println("No activities today")
-			return
-		}
-
-		// Group by category
-		categoryMap := make(map[string][]model.DailySummaryActivity)
-		for _, a := range summary.Activities {
-			categoryMap[a.Category] = append(categoryMap[a.Category], a)
-		}
-
-		for cat, activities := range categoryMap {
-			fmt.Printf("### %s\n", cat)
-			for _, a := range activities {
-				statusIcon := map[string]string{"todo": "📝", "in-progress": "🔄", "done": "✅"}[a.Status]
-				fmt.Printf("%s %s\n", statusIcon, a.TaskTitle)
-				for _, log := range a.TodayLogs {
-					fmt.Printf("   - %s\n", log)
-				}
+			if len(summary.Activities) == 0 {
+				fmt.Println("No activities today")
+				return
 			}
-			fmt.Println()
+
+			// Group by category
+			categoryMap := make(map[string][]model.DailySummaryActivity)
+			for _, a := range summary.Activities {
+				categoryMap[a.Category] = append(categoryMap[a.Category], a)
+			}
+
+			for cat, activities := range categoryMap {
+				fmt.Printf("### %s\n", cat)
+				for _, a := range activities {
+					statusIcon := map[string]string{"todo": "📝", "in-progress": "🔄", "done": "✅"}[a.Status]
+					fmt.Printf("%s %s\n", statusIcon, a.TaskTitle)
+					for _, log := range a.TodayLogs {
+						fmt.Printf("   - %s\n", log)
+					}
+				}
+				fmt.Println()
+			}
 		}
 	},
 }
@@ -240,21 +276,25 @@ var statsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Println("=== Task Statistics ===")
-		fmt.Printf("Total Tasks: %d\n", stats.TotalTasks)
-		fmt.Printf("Completed: %d\n", stats.CompletedTasks)
-		fmt.Printf("In Progress: %d\n", stats.InProgressTasks)
-		fmt.Printf("Todo: %d\n", stats.TodoTasks)
-		fmt.Printf("Completion Rate: %.1f%%\n", stats.CompletionRate*100)
+		if jsonOutput {
+			printJSON(stats)
+		} else {
+			fmt.Println("=== Task Statistics ===")
+			fmt.Printf("Total Tasks: %d\n", stats.TotalTasks)
+			fmt.Printf("Completed: %d\n", stats.CompletedTasks)
+			fmt.Printf("In Progress: %d\n", stats.InProgressTasks)
+			fmt.Printf("Todo: %d\n", stats.TodoTasks)
+			fmt.Printf("Completion Rate: %.1f%%\n", stats.CompletionRate*100)
 
-		fmt.Println("\n=== By Category ===")
-		for cat, count := range stats.ByCategory {
-			fmt.Printf("  %s: %d\n", cat, count)
-		}
+			fmt.Println("\n=== By Category ===")
+			for cat, count := range stats.ByCategory {
+				fmt.Printf("  %s: %d\n", cat, count)
+			}
 
-		fmt.Println("\n=== Weekly Stats ===")
-		for _, s := range stats.WeeklyStats {
-			fmt.Printf("  %s: created=%d, completed=%d\n", s.Date, s.Created, s.Completed)
+			fmt.Println("\n=== Weekly Stats ===")
+			for _, s := range stats.WeeklyStats {
+				fmt.Printf("  %s: created=%d, completed=%d\n", s.Date, s.Created, s.Completed)
+			}
 		}
 	},
 }
