@@ -6,18 +6,24 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/yuyudeqiu/chronicle/internal/config"
 	"github.com/yuyudeqiu/chronicle/internal/service"
 )
 
 var jsonOutput bool
+var dataDir string
 
 var rootCmd = &cobra.Command{
 	Use:   "chronicle",
 	Short: "Chronicle is a task management tool",
 	Long:  `Chronicle is a task management tool with a CLI and a web interface.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Initialize database
-		service.InitDB("data/app.db")
+		// 初始化配置（命令行参数优先级最高）
+		if dataDir != "" {
+			config.DataDir = dataDir
+		}
+		// 初始化数据库
+		service.InitDB(config.GetDBPath())
 	},
 }
 
@@ -41,4 +47,5 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&jsonOutput, "json", "o", false, "Output in JSON format")
+	rootCmd.PersistentFlags().StringVar(&dataDir, "data-dir", "", "Data directory (default: data/, or use CHRONICLE_DATA_DIR env var)")
 }

@@ -29,8 +29,8 @@ Chronicle 这是一个专为 LLM Agent 打造的**任务管理与追踪系统 (A
 │   ├── root.go                   # 根命令定义
 │   ├── server.go                 # 服务器启动命令
 │   └── tasks.go                  # 任务管理相关命令
-├── main.go                       # 项目主入口
 ├── internal/                     # 核心业务逻辑
+│   ├── config/                   # 配置管理（支持环境变量和命令行参数）
 │   ├── handler/                  # HTTP 请求处理与响应 (Controller)
 │   ├── model/                    # GORM 实体与接口 DTO
 │   └── service/                  # 核心业务逻辑 (事务处理、状态机等)
@@ -40,8 +40,9 @@ Chronicle 这是一个专为 LLM Agent 打造的**任务管理与追踪系统 (A
 │   └── dist/                     # Vite 构建输出目录 (Go Server 通过静态代理服务该目录)
 ├── templates/                    # Go Template 模板目录
 │   └── obsidian_task.tmpl        # 导出为 Obsidian Markdown 的渲染模板
-├── data/                         # 数据库文件存放目录 (运行时自动生成)
+├── data/                         # 默认数据库文件存放目录 (可通过环境变量或 --data-dir 自定义)
 │   └── app.db                    # SQLite 本地库
+├── main.go                       # 项目主入口
 └── bin/                          # 二进制编译输出目录
 ```
 
@@ -53,9 +54,37 @@ Chronicle 这是一个专为 LLM Agent 打造的**任务管理与追踪系统 (A
 - [Golang](https://go.dev/dl/) (版本建议 >= 1.20)
 - [Node.js](https://nodejs.org/) (版本建议 >= 18) 和 npm
 
-### 2. 构建前端页面
+### 2. 安装 Chronicle
 
-因为使用了现代化的 Vite + Vue 3 架构，在运行 Go 服务前，必须先编译前端资源：
+#### 方式一：go install（推荐）
+
+```bash
+go install github.com/yuyudeqiu/chronicle@latest
+```
+
+#### 方式二：手动编译
+
+```bash
+go build -o bin/chronicle main.go
+```
+
+### 3. 数据存储配置
+
+默认情况下，数据存放在项目目录下的 `data/app.db`。
+
+可通过以下方式自定义数据存储路径（优先级：命令行参数 > 环境变量 > 默认值）：
+
+```bash
+# 方式一：环境变量
+export CHRONICLE_DATA_DIR=/custom/path
+
+# 方式二：命令行参数
+chronicle --data-dir /custom/path create "新任务"
+```
+
+### 4. 构建前端页面
+
+因为使用了现代化的 Vite + Vue 3 架构，在运行 Web 服务器前，需要先编译前端资源：
 
 ```bash
 cd frontend
@@ -65,40 +94,34 @@ cd ..
 ```
 *(编译后的产物会存放在 `frontend/dist` 记录中，并且自动由后端的 Go 服务提供代理访问)*
 
-### 3. 下载后端依赖并运行服务
+### 5. 启动服务
 
 ```bash
-go mod tidy
 # 启动 Web 服务器，默认端口为 8080
-go run main.go server
+chronicle server
+
+# 或使用环境变量指定数据目录
+CHRONICLE_DATA_DIR=/path/to/data chronicle server
 ```
 
-### 4. 使用命令行工具 (CLI)
+服务启动后，可以直接通过浏览器访问主操作界面： http://localhost:8080/
+
+### 6. 使用命令行工具 (CLI)
 
 除了网页界面，你也可以直接在终端管理任务：
 
 ```bash
 # 查看所有命令
-go run main.go --help
+chronicle --help
 
 # 创建任务
-go run main.go create "完成项目重构" -c 开发 -d "使用 Cobra 优化 CLI"
+chronicle create "完成项目重构" -c 开发 -d "使用 Cobra 优化 CLI"
 
 # 列出进行中的任务
-go run main.go list in-progress
+chronicle list in-progress
 
 # 添加执行日志
-go run main.go log <task_id> "完成了 CLI 重构"
-
-服务启动后，可以直接通过浏览器访问主操作界面： http://localhost:8080/
-
-### 4. 编译可执行文件
-
-如果您想将系统编译为一个独立的二进制文件在后台运行：
-
-```bash
-go build -o bin/chronicle main.go
-./bin/chronicle server
+chronicle log <task_id> "完成了 CLI 重构"
 ```
 
 ## 🤖 接口说明 (供 Agent 使用)
