@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o server cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o chronicle main.go
 
 # Runtime stage
 FROM alpine:3.19
@@ -25,8 +25,8 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates
 
 # Copy binary from builder
-COPY --from=builder /app/server .
-COPY --from=builder /app/static ./static
+COPY --from=builder /app/chronicle .
+COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY --from=builder /app/templates ./templates
 
 # Create data directory
@@ -35,5 +35,5 @@ RUN mkdir -p data
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["./server"]
+# Run the application (default to server)
+CMD ["./chronicle", "server"]

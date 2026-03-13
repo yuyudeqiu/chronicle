@@ -25,7 +25,11 @@ Chronicle 这是一个专为 LLM Agent 打造的**任务管理与追踪系统 (A
 
 ```text
 .
-├── cmd/server/main.go            # 启动控制点，存放 HTTP 路由和应用初始化逻辑
+├── cmd/                          # 命令行工具逻辑
+│   ├── root.go                   # 根命令定义
+│   ├── server.go                 # 服务器启动命令
+│   └── tasks.go                  # 任务管理相关命令
+├── main.go                       # 项目主入口
 ├── internal/                     # 核心业务逻辑
 │   ├── handler/                  # HTTP 请求处理与响应 (Controller)
 │   ├── model/                    # GORM 实体与接口 DTO
@@ -65,9 +69,26 @@ cd ..
 
 ```bash
 go mod tidy
-# 启动本地开发服务器，默认端口为 8080
-go run cmd/server/main.go
+# 启动 Web 服务器，默认端口为 8080
+go run main.go server
 ```
+
+### 4. 使用命令行工具 (CLI)
+
+除了网页界面，你也可以直接在终端管理任务：
+
+```bash
+# 查看所有命令
+go run main.go --help
+
+# 创建任务
+go run main.go create "完成项目重构" -c 开发 -d "使用 Cobra 优化 CLI"
+
+# 列出进行中的任务
+go run main.go list in-progress
+
+# 添加执行日志
+go run main.go log <task_id> "完成了 CLI 重构"
 
 服务启动后，可以直接通过浏览器访问主操作界面： http://localhost:8080/
 
@@ -76,8 +97,8 @@ go run cmd/server/main.go
 如果您想将系统编译为一个独立的二进制文件在后台运行：
 
 ```bash
-go build -o bin/server cmd/server/main.go
-./bin/server
+go build -o bin/chronicle main.go
+./bin/chronicle server
 ```
 
 ## 🤖 接口说明 (供 Agent 使用)
@@ -89,3 +110,22 @@ go build -o bin/server cmd/server/main.go
 3. **追加执行日志并标记进度**: `POST /api/v1/tasks/:id/progress` (复合更新，保证原子性)
 4. **获取每日 JSON 总结**: `GET /api/v1/reports/daily-summary?date=YY-MM-DD`
 5. **获取 Markdown 导出**: `GET /api/v1/exports/daily-markdown?date=YY-MM-DD`
+
+### 📚 AI Agent 集成
+
+如果你是 AI Agent 想接入 Chronicle，推荐使用 `skills/` 目录下的 Skill 示例代码。
+
+**快速集成示例：**
+
+```powershell
+# 列出任务
+chronicle list --json
+
+# 创建任务
+chronicle create "任务标题" -c "分类"
+
+# 添加记录
+chronicle log <id> "工作内容"
+```
+
+详细文档见：[skills/](./skills/) 目录
