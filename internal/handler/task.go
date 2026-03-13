@@ -9,9 +9,17 @@ import (
 	"github.com/yuyudeqiu/chronicle/internal/service"
 )
 
+// Version info set at build time via ldflags
+var (
+	GitCommit  string
+	GitDate    string
+	BuildTime  string
+)
+
 func RegisterRoutes(r *gin.Engine) {
 	v1 := r.Group("/api/v1")
 	{
+		v1.GET("/version", GetVersion)
 		v1.POST("/tasks", CreateTask)
 		v1.GET("/tasks", GetActiveTasks)
 		v1.GET("/tasks/archived", GetArchivedTasks)
@@ -26,6 +34,14 @@ func RegisterRoutes(r *gin.Engine) {
 		v1.GET("/exports/daily-markdown", GetDailyMarkdown)
 		v1.GET("/stats/summary", GetStatsSummary)
 	}
+}
+
+func GetVersion(c *gin.Context) {
+	c.JSON(http.StatusOK, model.SuccessResp(map[string]string{
+		"git_commit":  GitCommit,
+		"git_date":    GitDate,
+		"build_time":  BuildTime,
+	}))
 }
 
 func CreateTask(c *gin.Context) {
