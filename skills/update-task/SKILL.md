@@ -1,11 +1,11 @@
 ---
 name: update-task
-description: 更新 Chronicle 任务：添加工作记录、标记完成。
+description: 更新 Chronicle 任务：修改标题、添加工作记录、标记完成。
 ---
 
 # update-task
 
-更新 Chronicle 任务：添加工作记录、标记完成。
+更新 Chronicle 任务：修改标题、添加工作记录、标记完成。
 
 ## CLI 命令
 
@@ -38,6 +38,7 @@ chronicle delete <id>
 | 命令 | 参数 | 说明 |
 |-----|-----|-----|
 | log | | 添加工作记录 |
+| update | --title | 任务标题 |
 | update | --new-status | 状态 (todo/in-progress/done) |
 | update | --deadline | 截止时间 |
 | update | -c, --category | 分类 |
@@ -57,6 +58,9 @@ chronicle update <id> --new-status in-progress
 
 # 修改截止时间
 chronicle update <id> --deadline "2026-03-20T20:30:00.000Z"
+
+# 修改标题
+chronicle update <id> --title "新的任务标题"
 
 # 删除任务
 chronicle delete <id>

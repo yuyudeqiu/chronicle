@@ -144,8 +144,8 @@ chronicle log <task_id> "完成了 CLI 重构"
 # 更新任务状态
 chronicle update <task_id> --new-status done
 
-# 更新任务信息
-chronicle update <task_id> -c 运维 -d "更新描述" --deadline 2026-01-01T00:00:00Z
+# 更新任务信息（包括标题）
+chronicle update <task_id> --title "新的任务标题" -c 运维 -d "更新描述" --deadline 2026-01-01T00:00:00Z
 
 # 删除任务
 chronicle delete <task_id>
