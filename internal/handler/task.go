@@ -4,15 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/yuyudeqiu/chronicle/internal/buildinfo"
 	"github.com/yuyudeqiu/chronicle/internal/model"
 	"github.com/yuyudeqiu/chronicle/internal/service"
-)
-
-// Version info set at build time via ldflags
-var (
-	GitCommit  string
-	GitDate    string
-	BuildTime  string
 )
 
 func RegisterRoutes(r *gin.Engine) {
@@ -36,11 +30,7 @@ func RegisterRoutes(r *gin.Engine) {
 }
 
 func GetVersion(c *gin.Context) {
-	c.JSON(http.StatusOK, model.SuccessResp(map[string]string{
-		"git_commit":  GitCommit,
-		"git_date":    GitDate,
-		"build_time":  BuildTime,
-	}))
+	c.JSON(http.StatusOK, model.SuccessResp(buildinfo.Current().API()))
 }
 
 func CreateTask(c *gin.Context) {

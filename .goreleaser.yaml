@@ -1,0 +1,51 @@
+version: 2
+
+project_name: chronicle
+
+builds:
+  - id: chronicle
+    main: .
+    binary: chronicle
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - >-
+        -s -w
+        -X main.version={{.Version}}
+        -X main.gitCommit={{.Commit}}
+        -X main.gitDate={{.CommitDate}}
+        -X main.buildTime={{.Date}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: chronicle
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    wrap_in_directory: true
+    files:
+      - README.md
+      - frontend/dist/**/*
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true
+
+release:
+  mode: keep-existing
