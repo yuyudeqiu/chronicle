@@ -19,6 +19,7 @@ var (
 	targets  string
 	deadline string
 	status   string
+	title    string
 )
 
 var createCmd = &cobra.Command{
@@ -65,7 +66,7 @@ var listCmd = &cobra.Command{
 			if queryStatus == "done" {
 				tasks, err = service.GetHistoryTasks()
 			} else {
-				// For cobra, we could handle other status specifically if needed, 
+				// For cobra, we could handle other status specifically if needed,
 				// but following original logic:
 				tasks, err = service.GetActiveTasks()
 			}
@@ -152,6 +153,7 @@ var updateCmd = &cobra.Command{
 		}
 
 		req := model.UpdateTaskReq{
+			Title:       title,
 			Category:    category,
 			Description: desc,
 			Targets:     targets,
@@ -396,6 +398,7 @@ func init() {
 	createCmd.Flags().StringVar(&deadline, "deadline", "", "Deadline (ISO8601 format)")
 
 	updateCmd.Flags().StringVarP(&category, "category", "c", "", "Task category")
+	updateCmd.Flags().StringVar(&title, "title", "", "Task title")
 	updateCmd.Flags().StringVarP(&desc, "desc", "d", "", "Task description")
 	updateCmd.Flags().StringVarP(&links, "links", "l", "", "Task links (one per line)")
 	updateCmd.Flags().StringVarP(&targets, "target", "t", "", "Task targets")

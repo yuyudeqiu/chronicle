@@ -28,7 +28,7 @@
 ```
 
 ### update-task
-更新任务：添加工作记录、标记完成。
+更新任务：修改标题、添加工作记录、标记完成。
 
 ```powershell
 # 添加记录
@@ -36,6 +36,9 @@
 
 # 标记完成
 .\bin\chronicle.exe update <id> --new-status done
+
+# 修改标题
+.\bin\chronicle.exe update <id> --title "新的任务标题"
 ```
 
 ### log-daily-work
