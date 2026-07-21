@@ -6,8 +6,9 @@ BINARY_NAME=chronicle
 GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null)
 GIT_DATE=$(shell git log -1 --format=%cs 2>/dev/null)
 BUILD_TIME=$(shell date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
+VERSION=$(shell git describe --tags --always --dirty 2>/dev/null)
 
-LDFLAGS=-X main.gitCommit=$(GIT_COMMIT) -X main.gitDate=$(GIT_DATE) -X main.buildTime=$(BUILD_TIME) -X github.com/yuyudeqiu/chronicle/internal/handler.GitCommit=$(GIT_COMMIT) -X github.com/yuyudeqiu/chronicle/internal/handler.GitDate=$(GIT_DATE) -X github.com/yuyudeqiu/chronicle/internal/handler.BuildTime=$(BUILD_TIME)
+LDFLAGS=-X main.version=$(VERSION) -X main.gitCommit=$(GIT_COMMIT) -X main.gitDate=$(GIT_DATE) -X main.buildTime=$(BUILD_TIME)
 
 build: frontend-build
 	go build -ldflags "$(LDFLAGS)" -o bin/$(BINARY_NAME) main.go

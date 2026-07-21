@@ -67,6 +67,12 @@ Chronicle 这是一个专为 LLM Agent 打造的**任务管理与追踪系统 (A
 go install github.com/yuyudeqiu/chronicle@latest
 ```
 
+安装 `main` 分支的开发版（版本信息会显示 commit）：
+
+```bash
+go install github.com/yuyudeqiu/chronicle@main
+```
+
 #### 方式二：手动编译
 
 ```bash
@@ -162,6 +168,7 @@ chronicle stats
 
 # 查看版本信息
 chronicle version
+chronicle version --json
 
 # 导出数据库
 chronicle export /path/to/backup.db
@@ -199,3 +206,9 @@ chronicle update <id> --new-status done
 ```
 
 详细文档见：[skills/](./skills/) 目录
+
+## 发布与版本规范
+
+Chronicle 使用 `v0.x.x` 语义化版本。合入 `main` 后，Release Please 会持续更新
+Release PR；只有合并该 Release PR 才会创建版本 tag 和 GitHub Release。完整的版本
+规则、提交格式及首次启用步骤见 [RELEASING.md](RELEASING.md)。
