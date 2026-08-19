@@ -11,6 +11,15 @@ const (
 	TaskStatusDone       = "done"
 )
 
+func IsValidTaskStatus(status string) bool {
+	switch status {
+	case TaskStatusTodo, TaskStatusInProgress, TaskStatusBlocked, TaskStatusDone:
+		return true
+	default:
+		return false
+	}
+}
+
 type Task struct {
 	ID                string     `gorm:"type:varchar(36);primaryKey" json:"id"`
 	Title             string     `gorm:"type:varchar(255);not null" json:"title"`
@@ -102,10 +111,10 @@ type WeeklyStats struct {
 }
 
 type WeeklySummaryResp struct {
-	WeekStart  string                 `json:"week_start"`
-	WeekEnd    string                 `json:"week_end"`
+	WeekStart  string                  `json:"week_start"`
+	WeekEnd    string                  `json:"week_end"`
 	Activities []WeeklySummaryActivity `json:"activities"`
-	Stats      WeeklyStats            `json:"stats"`
+	Stats      WeeklyStats             `json:"stats"`
 }
 
 type StatsSummaryResp struct {
