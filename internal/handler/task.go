@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -139,6 +140,10 @@ func UpdateTask(c *gin.Context) {
 
 	task, err := service.UpdateTask(id, req)
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidTaskStatus) {
+			c.JSON(http.StatusBadRequest, model.ErrorResp(400, err.Error()))
+			return
+		}
 		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to update task: "+err.Error()))
 		return
 	}
@@ -160,6 +165,10 @@ func UpdateProgress(c *gin.Context) {
 	}
 
 	if err := service.UpdateProgress(id, req); err != nil {
+		if errors.Is(err, service.ErrInvalidTaskStatus) {
+			c.JSON(http.StatusBadRequest, model.ErrorResp(400, err.Error()))
+			return
+		}
 		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to update progress: "+err.Error()))
 		return
 	}

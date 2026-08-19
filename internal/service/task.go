@@ -2,12 +2,15 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/yuyudeqiu/chronicle/internal/model"
 	"gorm.io/gorm"
 )
+
+var ErrInvalidTaskStatus = errors.New("invalid task status")
 
 func CreateTask(req model.CreateTaskReq) (*model.Task, error) {
 	var localDeadline *time.Time
@@ -38,7 +41,7 @@ func CreateTask(req model.CreateTaskReq) (*model.Task, error) {
 func GetActiveTasks() ([]model.ActiveTaskResp, error) {
 	var tasks []model.ActiveTaskResp
 	err := DB.Model(&model.Task{}).Select("id", "title", "category", "status", "deadline").
-		Where("status IN ?", []string{model.TaskStatusTodo, model.TaskStatusInProgress, model.TaskStatusBlocked}).
+		Where("status <> ? AND archived_at IS NULL", model.TaskStatusDone).
 		Order("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline ASC, created_at desc").
 		Find(&tasks).Error
 	if err != nil {
@@ -115,6 +118,10 @@ func GetTask(id string) (*model.Task, error) {
 }
 
 func UpdateTask(id string, req model.UpdateTaskReq) (*model.Task, error) {
+	if err := validateTaskStatus(req.Status); err != nil {
+		return nil, err
+	}
+
 	var task model.Task
 	if err := DB.First(&task, "id = ?", id).Error; err != nil {
 		return nil, err
@@ -157,6 +164,10 @@ func UpdateTask(id string, req model.UpdateTaskReq) (*model.Task, error) {
 }
 
 func UpdateProgress(taskID string, req model.UpdateProgressReq) error {
+	if err := validateTaskStatus(req.NewStatus); err != nil {
+		return err
+	}
+
 	return DB.Transaction(func(tx *gorm.DB) error {
 		var task model.Task
 		if err := tx.First(&task, "id = ?", taskID).Error; err != nil {
@@ -210,6 +221,13 @@ func UpdateProgress(taskID string, req model.UpdateProgressReq) error {
 
 		return nil
 	})
+}
+
+func validateTaskStatus(status string) error {
+	if status == "" || model.IsValidTaskStatus(status) {
+		return nil
+	}
+	return fmt.Errorf("%w %q: must be one of todo, in-progress, blocked, done", ErrInvalidTaskStatus, status)
 }
 
 // GetDailySummary returns the daily summary view for a given date string (YYYY-MM-DD).
