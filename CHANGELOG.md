@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/yuyudeqiu/chronicle/compare/v0.1.0...v0.1.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* publish standard semantic version tags ([#45](https://github.com/yuyudeqiu/chronicle/issues/45)) ([70e6976](https://github.com/yuyudeqiu/chronicle/commit/70e69762155ccae5e9b0d0952b36acf3199f248d))
+* reject invalid task statuses ([#47](https://github.com/yuyudeqiu/chronicle/issues/47)) ([9224eb3](https://github.com/yuyudeqiu/chronicle/commit/9224eb3e1c5987bd356f25d1f3a3818372635ff0))
+
 ## 0.1.0 (2026-07-21)
 
 
