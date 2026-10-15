@@ -55,7 +55,8 @@ var createCmd = &cobra.Command{
 }
 
 var listCmd = &cobra.Command{
-	Use:   "list [status]",
+	Use:   "list [status|archived]",
+	Args:  cobra.MaximumNArgs(1),
 	Short: "List tasks",
 	Run: func(cmd *cobra.Command, args []string) {
 		var tasks []model.ActiveTaskResp
@@ -63,11 +64,12 @@ var listCmd = &cobra.Command{
 
 		if len(args) > 0 {
 			queryStatus := args[0]
-			if queryStatus == "done" {
+			switch queryStatus {
+			case "archived":
+				tasks, err = service.GetArchivedTasks()
+			case "done":
 				tasks, err = service.GetHistoryTasks()
-			} else {
-				// For cobra, we could handle other status specifically if needed,
-				// but following original logic:
+			default:
 				tasks, err = service.GetActiveTasks()
 			}
 		} else {
@@ -120,7 +122,7 @@ var getCmd = &cobra.Command{
 			if len(task.Logs) > 0 {
 				fmt.Println("\nWorklogs:")
 				for _, log := range task.Logs {
-					fmt.Printf("  [%s] %s\n", log.CreatedAt.Format("2006-01-02 15:04"), log.LogText)
+					fmt.Printf("  [%s] %s\n    ID: %s\n", log.CreatedAt.Format("2006-01-02 15:04"), log.LogText, log.ID)
 				}
 			}
 		}

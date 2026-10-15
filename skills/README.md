@@ -4,7 +4,7 @@
 
 ## 环境要求
 
-- Chronicle 服务运行在 `http://localhost:8080`
+- CLI 直接读写本地 SQLite，无需启动 HTTP 服务；通过 `--data-dir` 或 `CHRONICLE_DATA_DIR` 指定数据目录。
 - CLI 路径：`{chronicle项目目录}/bin/chronicle`
 
 ## Skills
@@ -59,6 +59,7 @@
 |-----|------|
 | todo | 待处理 |
 | in-progress | 进行中 |
+| blocked | 阻塞 |
 | done | 已完成 |
 
 ## Deadline 格式

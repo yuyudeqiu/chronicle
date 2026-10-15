@@ -1,123 +1,45 @@
-# Tech Design: Agent-Centric Task Management System
+# Chronicle 技术设计
 
-## 1. Context & Architecture Goal
+## 架构
 
-系统旨在为 LLM Agent 提供一组稳定、原子化的后台 API，接管用户的日常任务拆解、进度追踪与日志记录。核心原则是：
-
-1. **防止幻觉：** 通过极简的列表接口让 Agent 获取真实 ID；通过复合接口保证状态更新与日志记录的原子性（数据库事务）。
-2. **自动化归档：** 提供机器友好的 JSON 日报接口（供 Agent 写总结），以及人类友好的 Markdown 导出接口（供 Obsidian 冷备）。
-
-## 2. Database Design (GORM / SQLite)
-
-采用物理外键或逻辑外键关联的扁平双表结构。
-
-### 2.1 Table: `tasks` (主任务表)
-
-* `id`: `varchar(36)` - 主键，建议使用短 UUID 或 NanoID (方便 Agent 识别)。
-* `title`: `varchar(255)` - 任务标题 (例："【BCS】菜单栏隐藏掉部署管理")。
-* `category`: `varchar(100)` - 分类/所属产品 (例："BCS")。
-* `description`: `text` - 任务背景/受影响服务等详细长文本。
-* `targets`: `text` - 任务目标（纯文本存储，可包含换行符）。
-* `status`: `varchar(20)` - 状态枚举：`todo`, `in-progress`, `done`。默认 `todo`。
-* `deadline`: `datetime` - 预期截止时间（可选）。
-* `actual_completed_at`: `datetime` - 实际完成时间（由系统根据 status 自动维护）。
-* `created_at`: `datetime` - 创建时间。
-* `updated_at`: `datetime` - 更新时间。
-
-### 2.2 Table: `task_logs` (工作记录/日志表)
-
-* `id`: `varchar(36)` - 主键。
-* `task_id`: `varchar(36)` - 关联 tasks.id，建普通索引。
-* `log_text`: `text` - 工作记录正文 (例："评估完成工作量，修改不多...")。
-* `progress_note`: `varchar(100)` - 可选，简短的进度备注。
-* `created_at`: `datetime` - 记录发生的时间（精确到分）。
-
-## 3. API Design (RESTful)
-
-所有接口统一返回标准 JSON 结构：`{"code": 0, "msg": "success", "data": {...}}`
-
-### 3.1 核心操作接口 (Agent 侧)
-
-**1. 创建任务**
-
-* **Endpoint:** `POST /api/v1/tasks`
-* **Payload:** `{"title": "...", "category": "...", "description": "...", "targets": "..."}`
-* **Response:** 返回新创建的 Task 对象（重点包含 `id`）。
-
-**2. 获取活跃任务列表 (Agent "看" 列表的眼睛)**
-
-* **Endpoint:** `GET /api/v1/tasks?status=in-progress,todo`
-* **Response:** 必须裁剪字段！只返回 `id`, `title`, `category`, `status`。绝对不要返回 `description`，以节省 Token。
-
-**3. 复合更新接口 (记录日志并更新状态)**
-
-* **Endpoint:** `POST /api/v1/tasks/:id/progress`
-* **Payload:** ```json
-{
-"log_text": "完成编写代码构建之后验证，并且交付",
-"mark_as_done": true,  // 如果为 true，则触发状态机将 status 改为 done
-"new_status": "done"   // 可选，兼容直接指定状态
-}
-```
-
-```
-
-
-* **核心逻辑 (State Machine):** 必须开启 DB 事务。插入一条 `task_logs`；如果检测到状态流转至 `done`，更新 `tasks.status = 'done'` 且 `actual_completed_at = NOW()`。
-
-### 3.2 报表与导出接口 (归档侧)
-
-**4. 每日工作总结 (供 Agent 生成日报文本)**
-
-* **Endpoint:** `GET /api/v1/reports/daily-summary?date=2026-02-26` (默认为今天)
-* **Response:** 返回高聚合、防 Token 爆炸的精简 JSON。
-```json
-{
-  "date": "2026-02-26",
-  "activities": [
-    {
-      "task_id": "xxx",
-      "task_title": "【BCS】菜单栏隐藏...",
-      "status": "done",
-      "today_logs": [
-        "10:12 - 评估完成工作量...",
-        "17:35 - 完成编写代码..."
-      ]
-    }
-  ]
-}
-
-```
-
-
-
-**5. 每日完成任务 Markdown 导出 (供 Obsidian)**
-
-* **Endpoint:** `GET /api/v1/exports/daily-markdown?date=2026-02-26`
-* **核心逻辑:** 1. 查询 `actual_completed_at` 在指定日期（当天 00:00 到 23:59）的所有 `tasks`。
-2. 获取这些 tasks 下的**所有历史** `task_logs`（按 `created_at` 升序，并在内存中按日期进行 Map 分组）。
-3. 使用 Go `text/template` 将数据注入，直接返回 `Content-Type: text/markdown` 的原始文本流。
-
-## 4. File Structure (Golang)
-
-建议遵循标准 Go 工程规范：
+Chronicle 保留 CLI 和 HTTP API 两个入口，共用 `internal/service` 中的业务逻辑和 SQLite 数据库。
+CLI 直接调用 service，无需启动 HTTP 服务。`chronicle server` 仅提供 `/api/v1` JSON API。
+项目不包含 Web 前端，不依赖 Node.js 或静态资源，也未实现 TUI。
 
 ```text
-.
-├── cmd/server/main.go            # 启动服务，初始化 DB
-├── internal/
-│   ├── model/                    # GORM 实体与 DTO (request/response struct)
-│   ├── handler/                  # HTTP 路由控制器
-│   ├── service/                  # 核心业务逻辑 (事务处理、状态机)
-│   └── exporter/                 # Markdown 模板渲染引擎
-├── templates/
-│   └── obsidian_task.tmpl        # Markdown 模板文件
-└── data/app.db                   # SQLite 本地库
-
+cmd/                     Cobra 命令：任务、归档、日志、报表、导入导出、服务启动
+internal/handler/        Gin HTTP 路由和请求响应处理
+internal/service/        任务操作、事务、归档和报表
+internal/model/          数据模型、请求和响应结构
+internal/config/         数据目录配置
+internal/buildinfo/      CLI 和 API 共用的版本信息
 ```
 
-## 5. Acceptance Criteria
+## 数据与配置
 
-* **AC1 (防呆):** `/api/v1/tasks` GET 列表接口的响应体中，坚决不包含长文本字段。
-* **AC2 (原子性):** 调用 `/progress` 接口时，如果 `log_text` 写入成功但状态更新失败，必须整体 Rollback，不能产生脏数据。
-* **AC3 (归档正确性):** `/exports/daily-markdown` 仅导出今天被标记为 `done` 的任务，但该任务生成的 Markdown 内部，必须完整呈现该任务从创建第一天到今天的**所有**历史日志，并按天分块。
+- SQLite 默认路径为 `data/app.db`，首次运行会创建数据目录并迁移表结构。
+- 数据目录优先级：`--data-dir` > `CHRONICLE_DATA_DIR` > `data/`。
+- 默认路径相对于进程工作目录；CLI 和 API 使用同一份数据时应指定相同的绝对路径。
+- `tasks` 保存任务信息，状态支持 `todo`、`in-progress`、`blocked`、`done`。
+- `task_logs` 通过 `task_id` 关联任务，保存工作日志。
+- `archived_at` 标记归档，归档不删除任务或日志；活跃列表和已完成列表排除归档任务。
+- 状态变为 `done` 时记录完成时间；进度接口在一个事务中添加日志并更新任务。
+- 删除任务时，在一个事务中先删除日志再删除任务。
+
+## 接口与命令
+
+HTTP 接口及 CLI 示例见 [README.md](README.md)，实际路由定义位于
+`internal/handler/task.go`。成功响应使用 `{"code":0,"msg":"success","data":...}`，
+未知路径返回 HTTP 404 和 JSON 错误。
+
+列表返回任务 ID、标题、分类、状态等精简字段，详情接口返回完整任务和日志。
+CLI 支持 `--json`，便于 Agent 和脚本解析；`get` 的文本输出同时显示工作日志 ID。
+
+CLI 覆盖任务创建、查询、更新、删除、归档、恢复归档、添加和删除工作日志、统计、日报和周报。
+`export` / `import` 用于 SQLite 数据库文件备份和迁移。
+目前未实现 Markdown 导出接口。
+
+## 构建与部署
+
+- `make build` 只编译当前平台的 Go 可执行文件，包含 CLI 和 API server。
+- GoReleaser 构建 macOS、Linux 和 Windows 发布包，无需额外静态资源。

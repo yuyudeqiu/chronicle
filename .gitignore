@@ -50,8 +50,4 @@ Icon
 *.swp
 *~
 
-# Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.DS_Store
 chronicle
