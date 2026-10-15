@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/yuyudeqiu/chronicle/compare/v0.1.1...v0.2.0) (2026-10-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* simplify Chronicle to CLI and HTTP API ([#48](https://github.com/yuyudeqiu/chronicle/issues/48))
+
+### Features
+
+* simplify Chronicle to CLI and HTTP API ([#48](https://github.com/yuyudeqiu/chronicle/issues/48)) ([f6cebe4](https://github.com/yuyudeqiu/chronicle/commit/f6cebe49f2a78257ff6395f924866475a7d58404))
+
 ## [0.1.1](https://github.com/yuyudeqiu/chronicle/compare/v0.1.0...v0.1.1) (2026-08-19)
 
 
