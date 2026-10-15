@@ -39,7 +39,6 @@ archives:
     wrap_in_directory: true
     files:
       - README.md
-      - frontend/dist/**/*
 
 checksum:
   name_template: checksums.txt

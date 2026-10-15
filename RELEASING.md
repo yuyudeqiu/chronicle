@@ -73,8 +73,7 @@ Before changing the release configuration, run:
 
 ```bash
 go test ./...
-npm --prefix frontend ci
-npm --prefix frontend run build
+make build
 goreleaser check
 goreleaser release --snapshot --clean --skip=publish
 ```

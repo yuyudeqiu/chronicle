@@ -16,14 +16,18 @@ var dataDir string
 var rootCmd = &cobra.Command{
 	Use:   "chronicle",
 	Short: "Chronicle is a task management tool",
-	Long:  `Chronicle is a task management tool with a CLI and a web interface.`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	Long:  `Chronicle is a task management tool with a CLI and an HTTP API.`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// 初始化配置（命令行参数优先级最高）
 		if dataDir != "" {
 			config.DataDir = dataDir
 		}
+		if err := config.EnsureDataDir(); err != nil {
+			return fmt.Errorf("create data directory: %w", err)
+		}
 		// 初始化数据库
 		service.InitDB(config.GetDBPath())
+		return nil
 	},
 }
 
