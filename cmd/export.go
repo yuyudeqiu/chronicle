@@ -17,13 +17,12 @@ var exportCmd = &cobra.Command{
 	Long: `Export the SQLite database file to the specified path.
 If no path is given, exports to chronicle-export-{timestamp}.db in the current directory.`,
 	Args: cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		dbPath := config.GetDBPath()
 
 		// Check source exists
-		if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "Error: database not found at %s\n", dbPath)
-			os.Exit(1)
+		if _, err := os.Stat(dbPath); err != nil {
+			return fmt.Errorf("stat database: %w", err)
 		}
 
 		// Determine output path
@@ -39,35 +38,36 @@ If no path is given, exports to chronicle-export-{timestamp}.db in the current d
 		outputDir := filepath.Dir(outputPath)
 		if outputDir != "." {
 			if err := os.MkdirAll(outputDir, 0755); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: cannot create directory %s: %v\n", outputDir, err)
-				os.Exit(1)
+				return fmt.Errorf("cannot create directory %s: %w", outputDir, err)
 			}
 		}
 
 		// Copy file
 		sourceFile, err := os.Open(dbPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: cannot open source database: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("cannot open source database: %w", err)
 		}
-		defer sourceFile.Close()
+		defer func() { _ = sourceFile.Close() }()
 
 		destFile, err := os.Create(outputPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: cannot create output file: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("cannot create output file: %w", err)
 		}
-		defer destFile.Close()
+		defer func() { _ = destFile.Close() }()
 
 		written, err := io.Copy(destFile, sourceFile)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: copy failed: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("copy failed: %w", err)
+		}
+
+		if err := destFile.Close(); err != nil {
+			return fmt.Errorf("close output file: %w", err)
 		}
 
 		fmt.Printf("✅ Database exported successfully\n")
 		fmt.Printf("   Source: %s (%d bytes)\n", dbPath, written)
 		fmt.Printf("   Dest:   %s\n", outputPath)
+		return nil
 	},
 }
 
@@ -78,14 +78,13 @@ var importCmd = &cobra.Command{
 WARNING: This will overwrite the existing database. All current data will be lost.
 Use --force to skip confirmation.`,
 	Args: cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		sourcePath := args[0]
 		dbPath := config.GetDBPath()
 
 		// Check source exists
-		if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "Error: source file not found: %s\n", sourcePath)
-			os.Exit(1)
+		if _, err := os.Stat(sourcePath); err != nil {
+			return fmt.Errorf("stat import source: %w", err)
 		}
 
 		force, _ := cmd.Flags().GetBool("force")
@@ -98,13 +97,12 @@ Use --force to skip confirmation.`,
 			fmt.Printf("   Are you sure? (yes/no): ")
 
 			var response string
-			if _, err := fmt.Scanln(&response); err != nil {
-				fmt.Printf("   Failed to read input: %v\n", err)
-				return
+			if _, err := fmt.Fscanln(cmd.InOrStdin(), &response); err != nil {
+				return fmt.Errorf("read import confirmation: %w", err)
 			}
 			if response != "yes" {
 				fmt.Println("Import cancelled.")
-				return
+				return nil
 			}
 		}
 
@@ -112,40 +110,42 @@ Use --force to skip confirmation.`,
 		backupPath := dbPath + ".pre-import-backup"
 		srcFile, err := os.Open(dbPath)
 		if err == nil {
-			defer srcFile.Close()
+			defer func() { _ = srcFile.Close() }()
 			bakFile, err := os.Create(backupPath)
 			if err == nil {
 				if _, copyErr := io.Copy(bakFile, srcFile); copyErr == nil {
 					fmt.Printf("   Auto-backup saved to: %s\n", backupPath)
 				}
-				bakFile.Close()
+				_ = bakFile.Close()
 			}
 		}
 
 		// Copy source to database path
 		sourceFile, err := os.Open(sourcePath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: cannot open source file: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("cannot open source file: %w", err)
 		}
-		defer sourceFile.Close()
+		defer func() { _ = sourceFile.Close() }()
 
 		destFile, err := os.Create(dbPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: cannot write to database path: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("cannot write to database path: %w", err)
 		}
-		defer destFile.Close()
+		defer func() { _ = destFile.Close() }()
 
 		written, err := io.Copy(destFile, sourceFile)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: import failed: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("import failed: %w", err)
+		}
+
+		if err := destFile.Close(); err != nil {
+			return fmt.Errorf("close imported database: %w", err)
 		}
 
 		fmt.Printf("\n✅ Database imported successfully\n")
 		fmt.Printf("   Source: %s (%d bytes)\n", sourcePath, written)
 		fmt.Printf("   Dest:   %s\n", dbPath)
+		return nil
 	},
 }
 

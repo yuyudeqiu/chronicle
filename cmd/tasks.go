@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -26,7 +25,7 @@ var createCmd = &cobra.Command{
 	Use:   "create <title>",
 	Short: "Create a new task",
 	Args:  cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		title := args[0]
 		deadlineTime := parseDeadline(deadline)
 
@@ -41,16 +40,16 @@ var createCmd = &cobra.Command{
 
 		task, err := service.CreateTask(req)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if jsonOutput {
-			printJSON(task)
+			return printJSON(cmd, task)
 		} else {
 			fmt.Printf("Task created: %s\n", task.ID)
 			printTask(task)
 		}
+		return nil
 	},
 }
 
@@ -58,7 +57,7 @@ var listCmd = &cobra.Command{
 	Use:   "list [status|archived]",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "List tasks",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		var tasks []model.ActiveTaskResp
 		var err error
 
@@ -77,21 +76,20 @@ var listCmd = &cobra.Command{
 		}
 
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if len(tasks) == 0 {
 			if jsonOutput {
-				printJSON([]model.ActiveTaskResp{})
+				return printJSON(cmd, []model.ActiveTaskResp{})
 			} else {
 				fmt.Println("No tasks found")
 			}
-			return
+			return nil
 		}
 
 		if jsonOutput {
-			printJSON(tasks)
+			return printJSON(cmd, tasks)
 		} else {
 			fmt.Printf("Found %d tasks:\n\n", len(tasks))
 			for _, t := range tasks {
@@ -99,6 +97,7 @@ var listCmd = &cobra.Command{
 				fmt.Printf("    ID: %s\n\n", t.ID)
 			}
 		}
+		return nil
 	},
 }
 
@@ -106,16 +105,15 @@ var getCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "Get task details by ID",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID := args[0]
 		task, err := service.GetTask(taskID)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if jsonOutput {
-			printJSON(task)
+			return printJSON(cmd, task)
 		} else {
 			printTask(task)
 
@@ -126,6 +124,7 @@ var getCmd = &cobra.Command{
 				}
 			}
 		}
+		return nil
 	},
 }
 
@@ -133,7 +132,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update <id>",
 	Short: "Update task by ID",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID := args[0]
 		deadlineTime := parseDeadline(deadline)
 
@@ -143,15 +142,14 @@ var updateCmd = &cobra.Command{
 			}
 			err := service.UpdateProgress(taskID, progressReq)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
+				return err
 			}
 			if jsonOutput {
-				printJSON(map[string]string{"id": taskID, "status": "updated"})
+				return printJSON(cmd, map[string]string{"id": taskID, "status": "updated"})
 			} else {
 				fmt.Printf("Task status updated: %s\n", taskID)
 			}
-			return
+			return nil
 		}
 
 		req := model.UpdateTaskReq{
@@ -165,16 +163,16 @@ var updateCmd = &cobra.Command{
 
 		task, err := service.UpdateTask(taskID, req)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if jsonOutput {
-			printJSON(task)
+			return printJSON(cmd, task)
 		} else {
 			fmt.Printf("Task updated: %s\n", taskID)
 			printTask(task)
 		}
+		return nil
 	},
 }
 
@@ -182,19 +180,19 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete <id>",
 	Short: "Delete task by ID",
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID := args[0]
 		err := service.DeleteTask(taskID)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if jsonOutput {
-			printJSON(map[string]string{"id": taskID, "status": "deleted"})
+			return printJSON(cmd, map[string]string{"id": taskID, "status": "deleted"})
 		} else {
 			fmt.Printf("Task deleted: %s\n", taskID)
 		}
+		return nil
 	},
 }
 
@@ -202,7 +200,7 @@ var logCmd = &cobra.Command{
 	Use:   "log <id> <message>",
 	Short: "Add worklog to task",
 	Args:  cobra.MinimumNArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		taskID := args[0]
 		logText := strings.Join(args[1:], " ")
 
@@ -212,22 +210,22 @@ var logCmd = &cobra.Command{
 
 		err := service.UpdateProgress(taskID, req)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if jsonOutput {
-			printJSON(map[string]string{"id": taskID, "status": "worklog added"})
+			return printJSON(cmd, map[string]string{"id": taskID, "status": "worklog added"})
 		} else {
 			fmt.Printf("Worklog added to task: %s\n", taskID)
 		}
+		return nil
 	},
 }
 
 var summaryCmd = &cobra.Command{
 	Use:   "summary [date]",
 	Short: "Get daily summary (default: today)",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		dateStr := ""
 		if len(args) > 0 {
 			dateStr = args[0]
@@ -235,18 +233,17 @@ var summaryCmd = &cobra.Command{
 
 		summary, err := service.GetDailySummary(dateStr)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if jsonOutput {
-			printJSON(summary)
+			return printJSON(cmd, summary)
 		} else {
 			fmt.Printf("Daily Summary for %s\n\n", summary.Date)
 
 			if len(summary.Activities) == 0 {
 				fmt.Println("No activities today")
-				return
+				return nil
 			}
 
 			// Group by category
@@ -267,13 +264,14 @@ var summaryCmd = &cobra.Command{
 				fmt.Println()
 			}
 		}
+		return nil
 	},
 }
 
 var weeklySummaryCmd = &cobra.Command{
 	Use:   "weekly-summary [date]",
 	Short: "Get weekly summary (default: current week, date picks the containing week)",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		dateStr := ""
 		if len(args) > 0 {
 			dateStr = args[0]
@@ -281,18 +279,17 @@ var weeklySummaryCmd = &cobra.Command{
 
 		summary, err := service.GetWeeklySummary(dateStr)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if jsonOutput {
-			printJSON(summary)
+			return printJSON(cmd, summary)
 		} else {
 			fmt.Printf("Weekly Summary: %s ~ %s\n\n", summary.WeekStart, summary.WeekEnd)
 
 			if len(summary.Activities) == 0 {
 				fmt.Println("No activities this week")
-				return
+				return nil
 			}
 
 			// Group by category
@@ -318,21 +315,21 @@ var weeklySummaryCmd = &cobra.Command{
 				summary.Stats.TotalTasks, summary.Stats.CompletedTasks,
 				summary.Stats.InProgressTasks, summary.Stats.TodoTasks, summary.Stats.BlockedTasks)
 		}
+		return nil
 	},
 }
 
 var statsCmd = &cobra.Command{
 	Use:   "stats",
 	Short: "Get task statistics",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		stats, err := service.GetStatsSummary()
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		if jsonOutput {
-			printJSON(stats)
+			return printJSON(cmd, stats)
 		} else {
 			fmt.Println("=== Task Statistics ===")
 			fmt.Printf("Total Tasks: %d\n", stats.TotalTasks)
@@ -352,6 +349,7 @@ var statsCmd = &cobra.Command{
 				fmt.Printf("  %s: created=%d, completed=%d\n", s.Date, s.Created, s.Completed)
 			}
 		}
+		return nil
 	},
 }
 

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/yuyudeqiu/chronicle/cmd"
 	"github.com/yuyudeqiu/chronicle/internal/buildinfo"
 )
@@ -15,5 +18,8 @@ var (
 
 func main() {
 	buildinfo.Set(version, gitCommit, gitDate, buildTime)
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
+	}
 }

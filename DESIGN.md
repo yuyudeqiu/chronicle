@@ -28,7 +28,7 @@ internal/buildinfo/      CLI 和 API 共用的版本信息
 
 ## 接口与命令
 
-HTTP 接口及 CLI 示例见 [README.md](README.md)，实际路由定义位于
+HTTP 接口及 CLI 示例见 [使用参考](docs/usage.md)，实际路由定义位于
 `internal/handler/task.go`。成功响应使用 `{"code":0,"msg":"success","data":...}`，
 未知路径返回 HTTP 404 和 JSON 错误。
 

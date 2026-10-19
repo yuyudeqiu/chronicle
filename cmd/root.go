@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/yuyudeqiu/chronicle/internal/config"
@@ -14,9 +13,11 @@ var jsonOutput bool
 var dataDir string
 
 var rootCmd = &cobra.Command{
-	Use:   "chronicle",
-	Short: "Chronicle is a task management tool",
-	Long:  `Chronicle is a task management tool with a CLI and an HTTP API.`,
+	Use:           "chronicle",
+	Short:         "Chronicle is a task management tool",
+	Long:          `Chronicle is a task management tool with a CLI and an HTTP API.`,
+	SilenceErrors: true,
+	SilenceUsage:  true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// 初始化配置（命令行参数优先级最高）
 		if dataDir != "" {
@@ -26,27 +27,25 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("create data directory: %w", err)
 		}
 		// 初始化数据库
-		service.InitDB(config.GetDBPath())
-		return nil
+		return service.InitDB(config.GetDBPath())
 	},
 }
 
 // JSON output helper
-func printJSON(v interface{}) {
+func printJSON(cmd *cobra.Command, v interface{}) error {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "JSON marshal error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("encode JSON: %w", err)
 	}
-	fmt.Println(string(data))
+	if _, err := fmt.Fprintln(cmd.OutOrStdout(), string(data)); err != nil {
+		return fmt.Errorf("write JSON: %w", err)
+	}
+	return nil
 }
 
-// Execute executes the root command.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+// Execute executes the root command and returns any error to the entry point.
+func Execute() error {
+	return rootCmd.Execute()
 }
 
 func init() {

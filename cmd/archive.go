@@ -19,7 +19,7 @@ var archiveCmd = &cobra.Command{
 			return err
 		}
 		if jsonOutput {
-			printJSON(map[string]string{"id": args[0], "status": "archived"})
+			return printJSON(cmd, map[string]string{"id": args[0], "status": "archived"})
 		} else {
 			fmt.Printf("Task archived: %s\n", args[0])
 		}
@@ -39,7 +39,7 @@ var unarchiveCmd = &cobra.Command{
 			return err
 		}
 		if jsonOutput {
-			printJSON(map[string]string{"id": args[0], "status": "unarchived"})
+			return printJSON(cmd, map[string]string{"id": args[0], "status": "unarchived"})
 		} else {
 			fmt.Printf("Task unarchived: %s\n", args[0])
 		}
@@ -56,7 +56,7 @@ var deleteWorklogCmd = &cobra.Command{
 			return err
 		}
 		if jsonOutput {
-			printJSON(map[string]string{"id": args[0], "status": "deleted"})
+			return printJSON(cmd, map[string]string{"id": args[0], "status": "deleted"})
 		} else {
 			fmt.Printf("Worklog deleted: %s\n", args[0])
 		}
