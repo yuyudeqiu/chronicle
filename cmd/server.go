@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -14,7 +15,7 @@ import (
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the chronicle HTTP API server",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Printf("Data directory: %s", config.Load())
 
 		r := newAPIRouter()
@@ -22,8 +23,9 @@ var serverCmd = &cobra.Command{
 		// Start server
 		log.Println("Starting server on :8080...")
 		if err := r.Run(":8080"); err != nil {
-			log.Fatalf("Server failed to start: %v", err)
+			return fmt.Errorf("start server: %w", err)
 		}
+		return nil
 	},
 }
 

@@ -9,7 +9,9 @@ import (
 )
 
 func TestUpdateCommandUpdatesTitle(t *testing.T) {
-	service.InitDB(filepath.Join(t.TempDir(), "chronicle.db"))
+	if err := service.InitDB(filepath.Join(t.TempDir(), "chronicle.db")); err != nil {
+		t.Fatalf("initialize database: %v", err)
+	}
 	task, err := service.CreateTask(model.CreateTaskReq{
 		Title:    "Original title",
 		Category: "test",
@@ -24,7 +26,9 @@ func TestUpdateCommandUpdatesTitle(t *testing.T) {
 	t.Cleanup(func() {
 		_ = updateCmd.Flags().Set("title", "")
 	})
-	updateCmd.Run(updateCmd, []string{task.ID})
+	if err := updateCmd.RunE(updateCmd, []string{task.ID}); err != nil {
+		t.Fatalf("update task: %v", err)
+	}
 
 	updated, err := service.GetTask(task.ID)
 	if err != nil {

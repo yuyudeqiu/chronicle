@@ -9,7 +9,9 @@ import (
 )
 
 func TestUpdateProgressRejectsInvalidStatus(t *testing.T) {
-	InitDB(filepath.Join(t.TempDir(), "chronicle.db"))
+	if err := InitDB(filepath.Join(t.TempDir(), "chronicle.db")); err != nil {
+		t.Fatalf("initialize database: %v", err)
+	}
 	task := createTestTask(t)
 
 	err := UpdateProgress(task.ID, model.UpdateProgressReq{NewStatus: "in_progress"})
@@ -27,7 +29,9 @@ func TestUpdateProgressRejectsInvalidStatus(t *testing.T) {
 }
 
 func TestUpdateTaskRejectsInvalidStatus(t *testing.T) {
-	InitDB(filepath.Join(t.TempDir(), "chronicle.db"))
+	if err := InitDB(filepath.Join(t.TempDir(), "chronicle.db")); err != nil {
+		t.Fatalf("initialize database: %v", err)
+	}
 	task := createTestTask(t)
 
 	_, err := UpdateTask(task.ID, model.UpdateTaskReq{Status: "doing"})
@@ -37,7 +41,9 @@ func TestUpdateTaskRejectsInvalidStatus(t *testing.T) {
 }
 
 func TestGetActiveTasksIncludesExistingUnknownStatuses(t *testing.T) {
-	InitDB(filepath.Join(t.TempDir(), "chronicle.db"))
+	if err := InitDB(filepath.Join(t.TempDir(), "chronicle.db")); err != nil {
+		t.Fatalf("initialize database: %v", err)
+	}
 	task := createTestTask(t)
 	if err := DB.Model(task).Update("status", "doing").Error; err != nil {
 		t.Fatalf("seed unknown status: %v", err)

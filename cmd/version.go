@@ -10,15 +10,15 @@ import (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
-	// Skip root's PersistentPreRun (no DB needed for version)
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {},
-	Run: func(cmd *cobra.Command, args []string) {
+	// Skip database initialization for version information.
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error { return nil },
+	RunE: func(cmd *cobra.Command, args []string) error {
 		info := buildinfo.Current()
 		if jsonOutput {
-			printJSON(info)
-			return
+			return printJSON(cmd, info)
 		}
 		fmt.Println(info.String())
+		return nil
 	},
 }
 
