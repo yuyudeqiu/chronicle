@@ -11,7 +11,8 @@ GoReleaser.
 | Bug fix | `fix:` | Patch: `v0.1.0` → `v0.1.1` |
 | Backward-compatible feature | `feat:` | Minor: `v0.1.0` → `v0.2.0` |
 | Breaking change | `feat!:` or `BREAKING CHANGE:` | Minor while `< v1.0.0` |
-| Documentation, tests, or CI | `docs:`, `test:`, `ci:`, `chore:` | No release by itself |
+| Documentation or refactoring | `docs:`, `refactor:` | Patch; included in release notes |
+| Tests, CI, or maintenance | `test:`, `ci:`, `chore:` | No release by itself |
 
 Pull request titles should follow Conventional Commits because squash merges use
 the PR title as the commit subject. Examples:
@@ -21,6 +22,15 @@ fix: preserve task title when updating progress
 feat: add task labels
 feat!: change the exported task schema
 ```
+
+Release notes explicitly include features, fixes, performance improvements,
+dependencies, reverts, refactoring, and documentation. Ordinary tests, CI, and
+maintenance commits stay hidden. A breaking change still follows the breaking
+change policy regardless of its prefix.
+
+Changing these sections regenerates notes for all commits since the last release,
+including already merged PRs. Merge the configuration change before the pending
+Release PR so the bot can refresh its changelog and body.
 
 ## Publishing a release
 
