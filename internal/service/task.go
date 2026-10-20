@@ -272,17 +272,21 @@ func GetDailySummary(dateStr string) (*model.DailySummaryResp, error) {
 
 	var activities []model.DailySummaryActivity
 	if len(taskIDs) > 0 {
-		var tasks []model.Task
-		if err := DB.Where("id IN ?", taskIDs).Find(&tasks).Error; err != nil {
+		var tasks []model.ActiveTaskResp
+		if err := DB.Model(&model.Task{}).Select("id", "title", "category", "status").
+			Where("id IN ?", taskIDs).Find(&tasks).Error; err != nil {
 			return nil, err
 		}
-		taskMap := make(map[string]model.Task)
+		taskMap := make(map[string]model.ActiveTaskResp, len(tasks))
 		for _, t := range tasks {
 			taskMap[t.ID] = t
 		}
 
 		for _, tid := range taskIDs {
-			t := taskMap[tid]
+			t, exists := taskMap[tid]
+			if !exists {
+				continue
+			}
 			activities = append(activities, model.DailySummaryActivity{
 				TaskID:    t.ID,
 				TaskTitle: t.Title,
@@ -351,17 +355,21 @@ func GetWeeklySummary(dateStr string) (*model.WeeklySummaryResp, error) {
 
 	var activities []model.WeeklySummaryActivity
 	if len(taskIDs) > 0 {
-		var tasks []model.Task
-		if err := DB.Where("id IN ?", taskIDs).Find(&tasks).Error; err != nil {
+		var tasks []model.ActiveTaskResp
+		if err := DB.Model(&model.Task{}).Select("id", "title", "category", "status").
+			Where("id IN ?", taskIDs).Find(&tasks).Error; err != nil {
 			return nil, err
 		}
-		taskMap := make(map[string]model.Task)
+		taskMap := make(map[string]model.ActiveTaskResp, len(tasks))
 		for _, t := range tasks {
 			taskMap[t.ID] = t
 		}
 
 		for _, tid := range taskIDs {
-			t := taskMap[tid]
+			t, exists := taskMap[tid]
+			if !exists {
+				continue
+			}
 			activities = append(activities, model.WeeklySummaryActivity{
 				TaskID:    t.ID,
 				TaskTitle: t.Title,
@@ -376,93 +384,94 @@ func GetWeeklySummary(dateStr string) (*model.WeeklySummaryResp, error) {
 		activities = []model.WeeklySummaryActivity{}
 	}
 
-	// Calculate stats for this week
-	var totalTasks, completedTasks, inProgressTasks, todoTasks, blockedTasks int64
-	DB.Model(&model.Task{}).Where("id IN ?", taskIDs).Count(&totalTasks)
-	DB.Model(&model.Task{}).Where("id IN ? AND status = ?", taskIDs, model.TaskStatusDone).Count(&completedTasks)
-	DB.Model(&model.Task{}).Where("id IN ? AND status = ?", taskIDs, model.TaskStatusInProgress).Count(&inProgressTasks)
-	DB.Model(&model.Task{}).Where("id IN ? AND status = ?", taskIDs, model.TaskStatusTodo).Count(&todoTasks)
-	DB.Model(&model.Task{}).Where("id IN ? AND status = ?", taskIDs, model.TaskStatusBlocked).Count(&blockedTasks)
+	// Activities already contain one entry per task with worklogs this week.
+	var stats model.WeeklyStats
+	for _, activity := range activities {
+		addTaskStats(&stats, activity.Status, 1)
+	}
 
 	resp := &model.WeeklySummaryResp{
 		WeekStart:  startOfWeek.Format("2006-01-02"),
 		WeekEnd:    endOfWeek.Format("2006-01-02"),
 		Activities: activities,
-		Stats: model.WeeklyStats{
-			TotalTasks:      int(totalTasks),
-			CompletedTasks:  int(completedTasks),
-			InProgressTasks: int(inProgressTasks),
-			TodoTasks:       int(todoTasks),
-			BlockedTasks:    int(blockedTasks),
-		},
+		Stats:      stats,
 	}
 
 	return resp, nil
 }
 
 func GetStatsSummary() (*model.StatsSummaryResp, error) {
-	var totalTasks int64
-	var completedTasks int64
-	var todoTasks int64
-	var inProgressTasks int64
-	var blockedTasks int64
-
-	// Total counts by status (excluding archived)
-	DB.Model(&model.Task{}).Where("archived_at IS NULL").Count(&totalTasks)
-	DB.Model(&model.Task{}).Where("status = ? AND archived_at IS NULL", model.TaskStatusDone).Count(&completedTasks)
-	DB.Model(&model.Task{}).Where("status = ? AND archived_at IS NULL", model.TaskStatusTodo).Count(&todoTasks)
-	DB.Model(&model.Task{}).Where("status = ? AND archived_at IS NULL", model.TaskStatusInProgress).Count(&inProgressTasks)
-	DB.Model(&model.Task{}).Where("status = ? AND archived_at IS NULL", model.TaskStatusBlocked).Count(&blockedTasks)
-
-	// By category
-	var categoryCounts []struct {
+	// One grouped query supplies both status totals and category counts.
+	var counts []struct {
 		Category string
+		Status   string
 		Count    int
 	}
-	DB.Model(&model.Task{}).Where("archived_at IS NULL").Select("category, COUNT(*) as count").Group("category").Scan(&categoryCounts)
+	if err := DB.Model(&model.Task{}).Where("archived_at IS NULL").
+		Select("category, status, COUNT(*) as count").Group("category, status").Scan(&counts).Error; err != nil {
+		return nil, err
+	}
 
+	var stats model.WeeklyStats
 	byCategory := make(map[string]int)
-	for _, c := range categoryCounts {
-		byCategory[c.Category] = c.Count
+	for _, c := range counts {
+		addTaskStats(&stats, c.Status, c.Count)
+		byCategory[c.Category] += c.Count
 	}
 
 	// Completion rate
 	var completionRate float64
-	if totalTasks > 0 {
-		completionRate = float64(completedTasks) / float64(totalTasks)
+	if stats.TotalTasks > 0 {
+		completionRate = float64(stats.CompletedTasks) / float64(stats.TotalTasks)
 	}
 
 	// Weekly stats (last 7 days)
-	var weeklyStats []model.DailyStats
+	weeklyStats := make([]model.DailyStats, 0, 7)
+	now := time.Now()
 	for i := 6; i >= 0; i-- {
-		date := time.Now().AddDate(0, 0, -i)
+		date := now.AddDate(0, 0, -i)
 		dateStr := date.Format("2006-01-02")
 		startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
-		endOfDay := startOfDay.Add(24 * time.Hour)
+		endOfDay := startOfDay.AddDate(0, 0, 1)
 
-		var created int64
-		var completed int64
-
-		DB.Model(&model.Task{}).Where("created_at >= ? AND created_at < ?", startOfDay, endOfDay).Count(&created)
-		DB.Model(&model.Task{}).Where("status = ? AND actual_completed_at >= ? AND actual_completed_at < ?", model.TaskStatusDone, startOfDay, endOfDay).Count(&completed)
-
-		weeklyStats = append(weeklyStats, model.DailyStats{
-			Date:      dateStr,
-			Completed: int(completed),
-			Created:   int(created),
-		})
+		// Historical daily counts include archived tasks, as before.
+		var daily model.DailyStats
+		if err := DB.Model(&model.Task{}).Select(
+			`COUNT(CASE WHEN created_at >= ? AND created_at < ? THEN 1 END) AS created,
+			 COUNT(CASE WHEN status = ? AND actual_completed_at >= ? AND actual_completed_at < ? THEN 1 END) AS completed`,
+			startOfDay, endOfDay, model.TaskStatusDone, startOfDay, endOfDay,
+		).Scan(&daily).Error; err != nil {
+			return nil, err
+		}
+		daily.Date = dateStr
+		weeklyStats = append(weeklyStats, daily)
 	}
 
 	resp := &model.StatsSummaryResp{
-		TotalTasks:      int(totalTasks),
-		CompletedTasks:  int(completedTasks),
-		TodoTasks:       int(todoTasks),
-		InProgressTasks: int(inProgressTasks),
-		BlockedTasks:    int(blockedTasks),
+		TotalTasks:      stats.TotalTasks,
+		CompletedTasks:  stats.CompletedTasks,
+		TodoTasks:       stats.TodoTasks,
+		InProgressTasks: stats.InProgressTasks,
+		BlockedTasks:    stats.BlockedTasks,
 		ByCategory:      byCategory,
 		CompletionRate:  completionRate,
 		WeeklyStats:     weeklyStats,
 	}
 
 	return resp, nil
+}
+
+func addTaskStats(stats *model.WeeklyStats, status string, count int) {
+	// Existing unknown statuses still contribute to the total.
+	stats.TotalTasks += count
+	switch status {
+	case model.TaskStatusTodo:
+		stats.TodoTasks += count
+	case model.TaskStatusInProgress:
+		stats.InProgressTasks += count
+	case model.TaskStatusBlocked:
+		stats.BlockedTasks += count
+	case model.TaskStatusDone:
+		stats.CompletedTasks += count
+	}
 }
