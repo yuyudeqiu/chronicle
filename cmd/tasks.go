@@ -255,8 +255,7 @@ var summaryCmd = &cobra.Command{
 			for cat, activities := range categoryMap {
 				fmt.Printf("### %s\n", cat)
 				for _, a := range activities {
-					statusIcon := map[string]string{"todo": "📝", "in-progress": "🔄", "blocked": "🚫", "done": "✅"}[a.Status]
-					fmt.Printf("%s %s\n", statusIcon, a.TaskTitle)
+					fmt.Printf("%s %s\n", taskStatusIcon(a.Status), a.TaskTitle)
 					for _, log := range a.TodayLogs {
 						fmt.Printf("   - %s\n", log)
 					}
@@ -301,8 +300,7 @@ var weeklySummaryCmd = &cobra.Command{
 			for cat, activities := range categoryMap {
 				fmt.Printf("### %s\n", cat)
 				for _, a := range activities {
-					statusIcon := map[string]string{"todo": "📝", "in-progress": "🔄", "blocked": "🚫", "done": "✅"}[a.Status]
-					fmt.Printf("%s %s\n", statusIcon, a.TaskTitle)
+					fmt.Printf("%s %s\n", taskStatusIcon(a.Status), a.TaskTitle)
 					for _, log := range a.WeekLogs {
 						fmt.Printf("   - %s\n", log)
 					}
@@ -354,6 +352,21 @@ var statsCmd = &cobra.Command{
 }
 
 // Helpers
+func taskStatusIcon(status string) string {
+	switch status {
+	case model.TaskStatusTodo:
+		return "📝"
+	case model.TaskStatusInProgress:
+		return "🔄"
+	case model.TaskStatusBlocked:
+		return "🚫"
+	case model.TaskStatusDone:
+		return "✅"
+	default:
+		return ""
+	}
+}
+
 func parseDeadline(s string) *time.Time {
 	if s == "" {
 		return nil
