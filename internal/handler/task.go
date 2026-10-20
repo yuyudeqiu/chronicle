@@ -8,6 +8,7 @@ import (
 	"github.com/yuyudeqiu/chronicle/internal/buildinfo"
 	"github.com/yuyudeqiu/chronicle/internal/model"
 	"github.com/yuyudeqiu/chronicle/internal/service"
+	"gorm.io/gorm"
 )
 
 func RegisterRoutes(r *gin.Engine) {
@@ -51,32 +52,19 @@ func CreateTask(c *gin.Context) {
 }
 
 func GetActiveTasks(c *gin.Context) {
-	status := c.Query("status")
-	if status == "" || status == "in-progress,todo" || status == "todo,in-progress" ||
-		status == "in-progress,todo,blocked" || status == "todo,in-progress,blocked" ||
-		status == "blocked,todo,in-progress" {
-		tasks, err := service.GetActiveTasks()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to get tasks: "+err.Error()))
+	tasks, err := service.GetTasksByStatus(c.Query("status"))
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidTaskStatus) {
+			c.JSON(http.StatusBadRequest, model.ErrorResp(400, err.Error()))
 			return
 		}
-		c.JSON(http.StatusOK, model.SuccessResp(tasks))
+		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to get tasks: "+err.Error()))
 		return
 	}
-
-	if status == "done" {
-		tasks, err := service.GetHistoryTasks()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to get tasks: "+err.Error()))
-			return
-		}
-		c.JSON(http.StatusOK, model.SuccessResp(tasks))
-		return
+	if tasks == nil {
+		tasks = []model.ActiveTaskResp{}
 	}
-
-	// In case agent asks for other statuses, this is not fully implemented per spec,
-	// we just ignore it or return bad request since spec says active tasks API is the agent's eyes.
-	c.JSON(http.StatusBadRequest, model.ErrorResp(400, "unsupported status query"))
+	c.JSON(http.StatusOK, model.SuccessResp(tasks))
 }
 
 func DeleteTask(c *gin.Context) {
@@ -225,6 +213,10 @@ func ArchiveTask(c *gin.Context) {
 	}
 
 	if err := service.ArchiveTask(id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, model.ErrorResp(404, "task not found"))
+			return
+		}
 		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to archive task: "+err.Error()))
 		return
 	}
@@ -240,6 +232,10 @@ func UnarchiveTask(c *gin.Context) {
 	}
 
 	if err := service.UnarchiveTask(id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, model.ErrorResp(404, "task not found"))
+			return
+		}
 		c.JSON(http.StatusInternalServerError, model.ErrorResp(500, "failed to unarchive task: "+err.Error()))
 		return
 	}

@@ -36,6 +36,10 @@ chronicle list
 # 列出已完成任务（最近 50 条）
 chronicle list done
 
+# 按单个或多个状态筛选（不包含归档任务）
+chronicle list todo
+chronicle list todo,in-progress
+
 # 查看任务详情
 chronicle get <task_id>
 
@@ -44,6 +48,9 @@ chronicle log <task_id> "完成了 CLI 重构"
 
 # 更新任务状态
 chronicle update <task_id> --new-status done
+
+# 同时更新状态和其他信息
+chronicle update <task_id> --new-status done --title "最终标题" -d "已完成验证"
 
 # 更新任务信息（包括标题）
 chronicle update <task_id> --title "新的任务标题" -c 运维 -d "更新描述" --deadline 2026-01-01T00:00:00Z
@@ -81,6 +88,9 @@ chronicle import /path/to/backup.db
 chronicle import /path/to/backup.db --force  # 跳过确认
 ```
 
+更新状态与其他信息可在同一次 `update` 中完成。首次进入 `done` 时记录完成时间；重复设置 `done` 保留原完成时间；从 `done` 改回其他状态时清除完成时间。
+`update --json` 返回更新后的完整任务，包括状态与完成时间。
+
 ### 全局参数
 
 | 参数 | 说明 |
@@ -103,7 +113,7 @@ curl http://localhost:8080/api/v1/version
 |------|------|------|
 | GET | `/version` | 版本信息 |
 | POST | `/tasks` | 创建任务 |
-| GET | `/tasks` | 活跃任务；`?status=done` 获取已完成任务 |
+| GET | `/tasks` | 默认活跃任务；`?status=todo` 或 `?status=todo,in-progress` 按状态筛选；`?status=done` 获取最近 50 条已完成任务 |
 | GET | `/tasks/archived` | 归档任务 |
 | GET / PATCH / DELETE | `/tasks/:id` | 查询、修改、删除任务 |
 | POST | `/tasks/:id/progress` | 添加工作日志并更新进度 |
@@ -113,6 +123,16 @@ curl http://localhost:8080/api/v1/version
 | GET | `/reports/daily-summary` | 日报，可传 `?date=YYYY-MM-DD` |
 | GET | `/reports/weekly-summary` | 周报，可传 `?date=YYYY-MM-DD` |
 | GET | `/stats/summary` | 任务统计 |
+
+CLI 与 API 的状态筛选支持 `todo`、`in-progress`、`blocked`、`done`，多个状态以逗号分隔，顺序无关，重复值自动去重。筛选排除归档任务；单独筛选 `done` 返回最近 50 条，其他组合按截止时间和创建时间排序，不限制条数。非法状态或空的组合项会报错，API 返回 HTTP 400。
+
+添加日志并将任务标记为完成时，向 `POST /tasks/:id/progress` 传入：
+
+```json
+{"log_text":"完成实现并验证","new_status":"done"}
+```
+
+完成状态统一使用 `new_status: "done"`，不再支持 `mark_as_done` 参数。
 
 ## 从源码构建
 
