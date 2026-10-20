@@ -12,9 +12,6 @@ var archiveCmd = &cobra.Command{
 	Short: "Archive a task without deleting it",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if _, err := service.GetTask(args[0]); err != nil {
-			return err
-		}
 		if err := service.ArchiveTask(args[0]); err != nil {
 			return err
 		}
@@ -32,9 +29,6 @@ var unarchiveCmd = &cobra.Command{
 	Short: "Restore an archived task",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if _, err := service.GetTask(args[0]); err != nil {
-			return err
-		}
 		if err := service.UnarchiveTask(args[0]); err != nil {
 			return err
 		}

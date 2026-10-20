@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -50,6 +51,35 @@ func GetActiveTasks() ([]model.ActiveTaskResp, error) {
 	return tasks, nil
 }
 
+// GetTasksByStatus lists unarchived tasks matching a comma-separated status filter.
+// An empty filter keeps the default active list; done alone keeps the history limit.
+func GetTasksByStatus(filter string) ([]model.ActiveTaskResp, error) {
+	if filter == "" {
+		return GetActiveTasks()
+	}
+	statuses := make([]string, 0, 4)
+	seen := make(map[string]bool)
+	for _, value := range strings.Split(filter, ",") {
+		status := strings.TrimSpace(value)
+		if !model.IsValidTaskStatus(status) {
+			return nil, fmt.Errorf("%w %q: must be one of todo, in-progress, blocked, done", ErrInvalidTaskStatus, status)
+		}
+		if !seen[status] {
+			statuses = append(statuses, status)
+			seen[status] = true
+		}
+	}
+	if len(statuses) == 1 && statuses[0] == model.TaskStatusDone {
+		return GetHistoryTasks()
+	}
+	tasks := make([]model.ActiveTaskResp, 0)
+	err := DB.Model(&model.Task{}).Select("id", "title", "category", "status", "deadline").
+		Where("status IN ? AND archived_at IS NULL", statuses).
+		Order("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline ASC, created_at desc").
+		Find(&tasks).Error
+	return tasks, err
+}
+
 func GetHistoryTasks() ([]model.ActiveTaskResp, error) {
 	var tasks []model.ActiveTaskResp
 	err := DB.Model(&model.Task{}).Select("id", "title", "category", "status").
@@ -76,17 +106,31 @@ func GetArchivedTasks() ([]model.ActiveTaskResp, error) {
 }
 
 func ArchiveTask(id string) error {
-	return DB.Model(&model.Task{}).Where("id = ?", id).Updates(map[string]interface{}{
+	result := DB.Model(&model.Task{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"archived_at": time.Now(),
 		"updated_at":  time.Now(),
-	}).Error
+	})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func UnarchiveTask(id string) error {
-	return DB.Model(&model.Task{}).Where("id = ?", id).Updates(map[string]interface{}{
+	result := DB.Model(&model.Task{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"archived_at": nil,
 		"updated_at":  time.Now(),
-	}).Error
+	})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func DeleteTask(id string) error {
@@ -151,8 +195,10 @@ func UpdateTask(id string, req model.UpdateTaskReq) (*model.Task, error) {
 	}
 	if req.Status != "" {
 		updates["status"] = req.Status
-		if req.Status == model.TaskStatusDone {
+		if req.Status == model.TaskStatusDone && task.Status != model.TaskStatusDone {
 			updates["actual_completed_at"] = time.Now()
+		} else if req.Status != model.TaskStatusDone {
+			updates["actual_completed_at"] = nil
 		}
 	}
 
@@ -202,7 +248,7 @@ func UpdateProgress(taskID string, req model.UpdateProgressReq) error {
 		}
 
 		newStatus := task.Status
-		if req.MarkAsDone || req.NewStatus == model.TaskStatusDone {
+		if req.NewStatus == model.TaskStatusDone {
 			newStatus = model.TaskStatusDone
 			now := time.Now()
 			updates["actual_completed_at"] = now

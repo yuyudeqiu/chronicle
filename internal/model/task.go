@@ -38,11 +38,10 @@ type Task struct {
 }
 
 type TaskLog struct {
-	ID           string    `gorm:"type:varchar(36);primaryKey" json:"id"`
-	TaskID       string    `gorm:"type:varchar(36);index;not null" json:"task_id"`
-	LogText      string    `gorm:"type:text;not null" json:"log_text"`
-	ProgressNote string    `gorm:"type:varchar(100)" json:"progress_note,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID        string    `gorm:"type:varchar(36);primaryKey" json:"id"`
+	TaskID    string    `gorm:"type:varchar(36);index;not null" json:"task_id"`
+	LogText   string    `gorm:"type:text;not null" json:"log_text"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // Request and Response DTOs
@@ -57,10 +56,9 @@ type CreateTaskReq struct {
 }
 
 type UpdateProgressReq struct {
-	LogText    string     `json:"log_text" binding:"required"`
-	MarkAsDone bool       `json:"mark_as_done"`
-	NewStatus  string     `json:"new_status"`
-	Deadline   *time.Time `json:"deadline"`
+	LogText   string     `json:"log_text" binding:"required"`
+	NewStatus string     `json:"new_status"`
+	Deadline  *time.Time `json:"deadline"`
 }
 
 type UpdateTaskReq struct {

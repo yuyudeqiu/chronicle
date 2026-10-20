@@ -26,6 +26,8 @@ func TestTaskCommandsReturnErrors(t *testing.T) {
 		args []string
 	}{
 		{getCmd, []string{"missing"}},
+		{archiveCmd, []string{"missing"}},
+		{unarchiveCmd, []string{"missing"}},
 		{updateCmd, []string{"missing"}},
 		{logCmd, []string{"missing", "work"}},
 	} {

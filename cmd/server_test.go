@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/yuyudeqiu/chronicle/internal/model"
+	"github.com/yuyudeqiu/chronicle/internal/service"
 )
 
 func TestAPIRouterWithoutStaticFiles(t *testing.T) {
@@ -39,6 +41,29 @@ func TestAPIRouterWithoutStaticFiles(t *testing.T) {
 			}
 			if response.Code != wantCode {
 				t.Fatalf("response code = %d, want %d", response.Code, wantCode)
+			}
+		})
+	}
+}
+
+func TestArchiveAPIReturnsNotFound(t *testing.T) {
+	if err := service.InitDB(filepath.Join(t.TempDir(), "chronicle.db")); err != nil {
+		t.Fatal(err)
+	}
+	router := newAPIRouter()
+	for _, action := range []string{"archive", "unarchive"} {
+		t.Run(action, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/api/v1/tasks/missing/"+action, nil))
+			if recorder.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404: %s", recorder.Code, recorder.Body)
+			}
+			var response model.StandardResponse
+			if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+				t.Fatal(err)
+			}
+			if response.Code != http.StatusNotFound || response.Msg != "task not found" {
+				t.Fatalf("unexpected response: %#v", response)
 			}
 		})
 	}

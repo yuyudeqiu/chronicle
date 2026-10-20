@@ -54,7 +54,7 @@ var createCmd = &cobra.Command{
 }
 
 var listCmd = &cobra.Command{
-	Use:   "list [status|archived]",
+	Use:   "list [status[,status...]|archived]",
 	Args:  cobra.MaximumNArgs(1),
 	Short: "List tasks",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,10 +66,8 @@ var listCmd = &cobra.Command{
 			switch queryStatus {
 			case "archived":
 				tasks, err = service.GetArchivedTasks()
-			case "done":
-				tasks, err = service.GetHistoryTasks()
 			default:
-				tasks, err = service.GetActiveTasks()
+				tasks, err = service.GetTasksByStatus(queryStatus)
 			}
 		} else {
 			tasks, err = service.GetActiveTasks()
@@ -136,22 +134,6 @@ var updateCmd = &cobra.Command{
 		taskID := args[0]
 		deadlineTime := parseDeadline(deadline)
 
-		if status != "" {
-			progressReq := model.UpdateProgressReq{
-				NewStatus: status,
-			}
-			err := service.UpdateProgress(taskID, progressReq)
-			if err != nil {
-				return err
-			}
-			if jsonOutput {
-				return printJSON(cmd, map[string]string{"id": taskID, "status": "updated"})
-			} else {
-				fmt.Printf("Task status updated: %s\n", taskID)
-			}
-			return nil
-		}
-
 		req := model.UpdateTaskReq{
 			Title:       title,
 			Category:    category,
@@ -159,6 +141,7 @@ var updateCmd = &cobra.Command{
 			Targets:     targets,
 			Links:       links,
 			Deadline:    deadlineTime,
+			Status:      status,
 		}
 
 		task, err := service.UpdateTask(taskID, req)
