@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.0](https://github.com/yuyudeqiu/chronicle/compare/v0.1.1...v0.2.0) (2026-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove mark_as_done in favor of new_status=done; update --json consistently returns the updated task.
+* simplify Chronicle to CLI and HTTP API ([#48](https://github.com/yuyudeqiu/chronicle/issues/48))
+
+### Features
+
+* simplify Chronicle to CLI and HTTP API ([#48](https://github.com/yuyudeqiu/chronicle/issues/48)) ([f6cebe4](https://github.com/yuyudeqiu/chronicle/commit/f6cebe49f2a78257ff6395f924866475a7d58404))
+
+
+### Bug Fixes
+
+* include refactoring and documentation in release notes ([#51](https://github.com/yuyudeqiu/chronicle/issues/51)) ([d0b27e4](https://github.com/yuyudeqiu/chronicle/commit/d0b27e48499a893cbf57aa010746cd74ff4e3bc7))
+* simplify task state handling and status filtering ([#53](https://github.com/yuyudeqiu/chronicle/issues/53)) ([237b17c](https://github.com/yuyudeqiu/chronicle/commit/237b17cb300141d947c247bbe233c324eb3de4f0))
+
+
+### Performance Improvements
+
+* reduce redundant summary statistics queries ([#52](https://github.com/yuyudeqiu/chronicle/issues/52)) ([4bf7e6f](https://github.com/yuyudeqiu/chronicle/commit/4bf7e6f5ebc6bff33f057cc1b43eefd50e1f6151))
+
+
+### Code Refactoring
+
+* simplify docs, agent skill, and CLI error handling ([#50](https://github.com/yuyudeqiu/chronicle/issues/50)) ([e010fb6](https://github.com/yuyudeqiu/chronicle/commit/e010fb6b1d013932d7d67ecec9bb860bdf23015d))
+
 ## [0.1.1](https://github.com/yuyudeqiu/chronicle/compare/v0.1.0...v0.1.1) (2026-08-19)
 
 
